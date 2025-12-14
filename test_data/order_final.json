@@ -1,0 +1,28 @@
+{
+  "app": {
+    "description": "Una aplicación de ejemplo",
+    "settings": {
+      "language": "español",
+      "theme": {
+        "colors": {
+          "primary": "azul",
+          "quaternary": "rojo",
+          "secondary": "verde",
+          "tertiary": "amarillo"
+        },
+        "name": "Oscuro"
+      }
+    },
+    "title": "Mi Aplicación"
+  },
+  "button": {
+    "cancel": "Cancelar",
+    "submit": "Enviar"
+  },
+  "user": {
+    "profile": {
+      "bio": "Esta es mi biografía",
+      "name": "Usuario"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "curly_braces": "Hola {name}, bienvenido a {place}",
+  "printf_style": "Tienes %s mensajes nuevos",
+  "named_printf": "El usuario %(username)s tiene %(count)s puntos",
+  "mixed": "Hola {name}, tienes %s mensajes de %(sender)s",
+  "multiple_same": "De {start} a {end}, pasando por {middle}",
+  "at_start": "{user} ha iniciado sesión",
+  "at_end": "Mensaje enviado por %s",
+  "no_placeholder": "Este texto no tiene marcadores"
+}

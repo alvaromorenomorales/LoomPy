@@ -1,0 +1,19 @@
+{
+  "fruits": ["manzana", "naranja", "plátano"],
+  "numbers": [1, 2, 3, 4, 5],
+  "mixed": ["texto", 42, true, null, "más texto"],
+  "nested_arrays": [
+    ["primero", "segundo"],
+    ["tercero", "cuarto"]
+  ],
+  "objects_in_array": [
+    {
+      "name": "Juan",
+      "age": 30
+    },
+    {
+      "name": "María",
+      "age": 25
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "app": {
+    "title": "Mi Aplicación",
+    "description": "Una aplicación de ejemplo",
+    "settings": {
+      "language": "español",
+      "theme": {
+        "name": "Oscuro",
+        "colors": {
+          "primary": "azul",
+          "secondary": "verde"
+        }
+      }
+    }
+  },
+  "user": {
+    "profile": {
+      "name": "Usuario",
+      "bio": "Esta es mi biografía"
+    }
+  }
+}

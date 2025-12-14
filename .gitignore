@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.hypothesis/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Output files
+*.json
+!test_data/*.json
+!input/.gitkeep
+!output/.gitkeep
+
+# Keep input and output directories but ignore their contents (except .gitkeep)
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
+
+# Models cache
+.cache/
+models/
