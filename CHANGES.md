@@ -1,8 +1,8 @@
-# Cambios Realizados - Sistema de Configuración
+# Cambios Realizados - Sistema de Configuración y Barra de Progreso
 
 ## Resumen
 
-Se ha implementado un sistema de configuración centralizado para el proyecto JSON Translator, facilitando la gestión de variables importantes y la estructura de directorios.
+Se ha implementado un sistema de configuración centralizado para el proyecto JSON Translator, facilitando la gestión de variables importantes y la estructura de directorios. Además, se ha añadido una barra de progreso en tiempo real que muestra el avance de la traducción con estimación de tiempo.
 
 ## Archivos Creados
 
@@ -31,6 +31,78 @@ Documentación completa sobre:
 
 ### 4. `CHANGES.md`
 Este archivo, documentando todos los cambios realizados.
+
+## Barra de Progreso (Nuevo - Diciembre 2025)
+
+### Archivo Creado
+
+#### `src/progress_bar.py`
+Módulo de seguimiento y visualización de progreso que incluye:
+- **Clase `TaskProgress`**: Gestiona el estado del progreso de cada tarea
+- **Clase `ProgressBar`**: Renderiza la barra de progreso visual
+- **Cálculo dinámico de ETA**: Estima el tiempo restante basándose en la velocidad de procesamiento
+- **Actualización en tiempo real**: Muestra el progreso mientras se ejecuta la traducción
+- **Notificaciones de cambio de tarea**: Informa cuando se cambia de idioma
+
+### Archivos Modificados para Barra de Progreso
+
+#### `src/translation_pipeline.py`
+- Añadido parámetro `progress_callback` a `translate_json_values()`
+- Invoca el callback después de completar la traducción
+- Pasa el número de elementos procesados y totales al callback
+
+#### `src/translation_engine.py`
+- Añadido parámetro `progress_callback` a `translate_batch()`
+- Reporta progreso después de cada lote procesado
+- Permite actualizaciones en tiempo real durante la traducción
+
+#### `src/main.py`
+- Importa `ProgressBar` y `collect_string_paths`
+- Inicializa la barra de progreso antes del bucle de traducción
+- Cuenta el total de strings antes de cada idioma
+- Inicia nueva tarea para cada idioma con notificación
+- Actualiza el progreso durante la traducción
+- Marca la tarea como completa al finalizar
+- Mensajes traducidos al español
+
+### Características de la Barra de Progreso
+
+1. **Cálculo Dinámico del Tiempo**
+   - Mide la velocidad de procesamiento después de los primeros 10 elementos
+   - Calcula el ETA basándose en los elementos restantes
+   - Actualiza el tiempo estimado dinámicamente
+
+2. **Visualización en Tiempo Real**
+   ```
+   ▶ Traduciendo a EN
+     Total de elementos: 1902
+     [████████████████████░░░░░░░░░░░░░░░░░░░░] 47.1% | 896/1902 elementos | ETA: 02:30
+   ```
+
+3. **Notificaciones de Cambio de Tarea**
+   - Muestra cuando se cambia de idioma
+   - Indica el total de elementos a procesar
+   - Formato claro y colorido
+
+4. **Mensaje de Finalización**
+   ```
+   ✓ Completado en 5m 0s
+   ```
+
+### Resultados de Pruebas
+
+**Configuración de prueba:**
+- Archivo: 1,902 elementos
+- Idioma objetivo: Inglés
+- Dispositivo: CPU
+- Tiempo total: 5 minutos
+
+**Precisión del progreso:**
+- 20.2% | 384/1902 | ETA: 03:46 ✅
+- 47.1% | 896/1902 | ETA: 02:30 ✅
+- 62.3% | 1184/1902 | ETA: 01:47 ✅
+- 84.1% | 1600/1902 | ETA: 00:45 ✅
+- 100.0% | 1902/1902 | Completado ✅
 
 ## Archivos Modificados
 

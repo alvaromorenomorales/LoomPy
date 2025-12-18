@@ -10,6 +10,7 @@ from src.placeholder_protection import extract_placeholders, restore_placeholder
 def translate_json_values(
     json_data: Any,
     translate_func: callable,
+    progress_callback: callable = None,
     **translate_kwargs
 ) -> Any:
     """
@@ -26,6 +27,8 @@ def translate_json_values(
         json_data: The source JSON structure (dict, list, or primitive)
         translate_func: Function to translate a list of texts
                        Should accept List[str] and return List[str]
+        progress_callback: Optional callback function to report progress.
+                          Called with (processed_count, total_count)
         **translate_kwargs: Additional keyword arguments to pass to translate_func
         
     Returns:
@@ -55,6 +58,10 @@ def translate_json_values(
     
     # Step 3: Translate the protected texts
     translated_texts = translate_func(protected_texts, **translate_kwargs)
+    
+    # Report progress after translation
+    if progress_callback:
+        progress_callback(len(protected_texts), len(protected_texts))
     
     # Ensure we got the same number of translations back
     if len(translated_texts) != len(protected_texts):

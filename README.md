@@ -1,13 +1,18 @@
-# JSON Translator
+# 🌐 JSON Translator
 
-A command-line tool that translates JSON files from Spanish to multiple languages (English, French, and Catalan) while preserving structure, keys, and placeholders.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.8%2B-blue)
+![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)
+
+A professional command-line tool that translates JSON files between multiple languages while preserving structure, keys, and placeholders. Built with SOLID principles in mind.
 
 ## Features
 
 - **Structure Preservation**: Maintains exact JSON structure including nested objects and arrays
 - **Key Preservation**: All JSON keys remain unchanged, only values are translated
 - **Placeholder Protection**: Automatically detects and preserves placeholders in text
-- **Multiple Languages**: Supports English (en), French (fr), and Catalan (ca)
+- **Multiple Languages**: Supports translation between multiple language pairs (Spanish, English, French, Catalan, German)
+- **Real-time Progress Bar**: Visual progress tracking with percentage, item counts, and ETA
 - **Line-by-Line Consistency**: Output files maintain the same line count and key positions as source
 - **GPU Acceleration**: Automatically uses GPU when available for faster translation
 - **Batch Processing**: Efficiently processes multiple texts in batches
@@ -81,13 +86,27 @@ You can modify these settings to customize the behavior of the translator.
 
 ### Basic Usage
 
-Translate `input/es.json` to English, French, and Catalan:
+Translate `input/es.json` from Spanish to English, French, and Catalan:
 
 ```bash
 python -m src.main
 ```
 
 This will create `output/en.json`, `output/fr.json`, and `output/ca.json`.
+
+### Specify Source Language
+
+Translate from English to Spanish and French:
+
+```bash
+python -m src.main input/en.json --source-lang en --langs es fr
+```
+
+Translate from French to English:
+
+```bash
+python -m src.main input/fr.json --source-lang fr --langs en
+```
 
 ### Specify Input File
 
@@ -126,7 +145,83 @@ python -m src.main --device cpu
 ### Complete Example
 
 ```bash
-python -m src.main input/es.json --langs en fr --out-dir custom_output --device cuda
+python -m src.main input/es.json --source-lang es --langs en fr --out-dir custom_output --device cuda
+```
+
+Translate from English to German:
+
+```bash
+python -m src.main input/en.json --source-lang en --langs de --device cpu
+```
+
+### Progress Bar
+
+During translation, you'll see a real-time progress bar showing:
+
+```
+▶ Traduciendo a EN
+  Total de elementos: 1902
+  [████████████████████░░░░░░░░░░░░░░░░░░░░] 47.1% | 896/1902 elementos | ETA: 02:30
+```
+
+The progress bar displays:
+- **Task name**: Current language being translated
+- **Visual bar**: Graphical representation of progress
+- **Percentage**: Completion percentage
+- **Item count**: Number of strings processed / total strings
+- **ETA**: Estimated time remaining (calculated dynamically based on processing speed)
+
+When translation completes:
+```
+✓ Completado en 5m 0s
+```
+
+## Workflow: From Raw to Translated
+
+The recommended workflow for processing your JSON files (e.g. `input/es.json`) to obtain a final translated version (e.g. `output/en.json`) is as follows:
+
+### 1. File Preparation (Sort and Clean)
+Before translation, your input file (`es.json`) should be valid.
+The tool automatically handles sorting and cleaning of duplicates.
+
+**To clean and sort your input file:**
+1.  **Duplicates:** If your file has duplicate keys, the tool will automatically clean them (keeping the last occurrence) without error.
+2.  **Sorting:** The tool automatically sorts all keys alphabetically in the output.
+3.  If you want to "normalize" your input file (sort and clean it) before translation, you can run a dummy translation or just rely on the output being clean.
+
+### 2. Translation
+Once your input file is clean, run the translation command. The output file (`en.json`) will be:
+*   Translated.
+*   **Sorted alphabetically by key** (for consistent diffs).
+*   **Clean of duplicates** (guaranteed by the input validation).
+
+**Example Command:**
+```bash
+python -m src.main input/es.json --langs en
+```
+
+This will produce `output/en.json`, which is the final, clean, sorted, and translated version.
+
+### 3. Clean and Sort Source File (Recommended)
+
+You can use the tool to "normalize" your source file (sort keys and remove duplicates) without running a translation.
+
+**Option A: Update the source file in-place (Risky but convenient)**
+This will overwrite `input/es.json` with the sorted and cleaned version.
+```bash
+python -m src.main input/es.json --update-source
+```
+
+**Option B: Generate a clean copy in output (Safe)**
+This will create `output/es.json` (sorted and clean) without modifying your original file.
+```bash
+python -m src.main input/es.json --output-source
+```
+
+You can also combine these with translation:
+```bash
+# Translate to English AND update the source file
+python -m src.main input/es.json --langs en --update-source
 ```
 
 ## Supported Placeholder Formats
@@ -451,13 +546,33 @@ pytest tests/test_line_count_property.py
 
 ## Supported Languages
 
-Currently supported target languages:
+The tool supports translation between the following language pairs:
 
-- **English (en)**: Spanish → English
-- **French (fr)**: Spanish → French  
-- **Catalan (ca)**: Spanish → Catalan
+| Source Language | Target Languages | Notes |
+|----------------|------------------|-------|
+| **Spanish (es)** | English (en), French (fr), Catalan (ca), German (de) | Default source language |
+| **English (en)** | Spanish (es), French (fr), German (de), Catalan (ca) | |
+| **French (fr)** | Spanish (es), English (en), German (de) | |
+| **Catalan (ca)** | Spanish (es), English (en) | |
+| **German (de)** | Spanish (es), English (en), French (fr) | |
 
-All translations use Helsinki-NLP Opus-MT models optimized for Spanish source text.
+All translations use Helsinki-NLP Opus-MT models from Hugging Face.
+
+### Usage Examples by Language Pair
+
+```bash
+# Spanish to English
+python -m src.main input/es.json --source-lang es --langs en
+
+# English to Spanish and French
+python -m src.main input/en.json --source-lang en --langs es fr
+
+# French to English
+python -m src.main input/fr.json --source-lang fr --langs en
+
+# German to Spanish
+python -m src.main input/de.json --source-lang de --langs es
+```
 
 ## Performance
 
@@ -471,8 +586,7 @@ GPU acceleration can provide 3-10x speedup depending on hardware.
 
 ## Limitations
 
-- **Source language**: Only Spanish is supported as source language
-- **Target languages**: Limited to English, French, and Catalan
+- **Model availability**: Not all language pairs have Opus-MT models available
 - **Max text length**: 512 tokens per string (longer texts are truncated with warning)
 - **Sequential processing**: Languages are translated one at a time
 - **Model quality**: Translation quality depends on Opus-MT models
@@ -497,6 +611,7 @@ GPU acceleration can provide 3-10x speedup depending on hardware.
 │   ├── placeholder_protection.py  # Placeholder detection and restoration
 │   ├── json_traversal.py          # JSON structure navigation
 │   ├── file_io.py                 # File loading and serialization
+│   ├── progress_bar.py            # Real-time progress tracking and visualization
 │   └── logger.py                  # Logging utilities
 ├── tests/                         # Test suite
 ├── test_data/                     # Example JSON files for testing
@@ -515,7 +630,11 @@ When contributing, ensure:
 
 ## License
 
-This project uses Helsinki-NLP Opus-MT models which are licensed under Apache 2.0.
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+The translation models used are from Helsinki-NLP and may have their own licenses.
 
 ## Acknowledgments
 

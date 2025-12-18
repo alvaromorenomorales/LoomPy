@@ -185,6 +185,24 @@ class TestErrorHandling:
         finally:
             Path(temp_path).unlink()
 
+    def test_load_duplicate_keys_cleanup(self):
+        """
+        Test that loading JSON with duplicate keys cleans them (keeps last).
+        Requirements: Updated for Duplicate Key Cleanup
+        """
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as f:
+            # "key" appears twice. Last value "value2" should win.
+            f.write('{"key": "value1", "key": "value2"}')
+            temp_path = f.name
+        
+        try:
+            # Should NOT raise error now
+            data = load_json_file(temp_path)
+            assert data["key"] == "value2"
+            assert len(data) == 1
+        finally:
+            Path(temp_path).unlink()
+
 
 class TestPropertyBasedUnicodePreservation:
     """Property-based tests for Unicode preservation during serialization."""
@@ -362,8 +380,8 @@ class TestEnsureOutputDirectory:
                 parent_dir.chmod(0o755)
 
 
-class TestPropertyBasedKeyOrderPreservation:
-    """Property-based tests for key order preservation during serialization."""
+class TestPropertyBasedKeySorting:
+    """Property-based tests for key sorting during serialization."""
     
     @given(
         json_data=st.recursive(
@@ -390,62 +408,35 @@ class TestPropertyBasedKeyOrderPreservation:
             max_leaves=20
         )
     )
-    def test_key_order_preservation_property(self, json_data):
+    def test_key_sorting_property(self, json_data):
         """
-        **Feature: json-translator, Property 14: Key order preservation**
+        **Feature: json-translator, Property 14: Key sorting**
         **Validates: Requirements 7.3**
         
-        For any JSON object with keys in order K1, K2, ..., Kn, the serialized
-        files should maintain the same key order K1, K2, ..., Kn.
+        For any JSON object, the serialized files should have keys sorted alphabetically.
         
         This test verifies that when we serialize and load JSON data,
-        the order of keys in all dictionaries is preserved.
+        the keys in all dictionaries are sorted alphabetically.
         """
         # Skip non-dict/list top-level values
         if not isinstance(json_data, (dict, list)):
             return
-        
-        # Extract key orders from the original structure
-        original_key_orders = self._extract_key_orders(json_data)
-        
+            
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "test.json"
             
             # Serialize the data
             serialize_json(json_data, str(output_path))
             
-            # Read back the data
-            loaded_data = load_json_file(str(output_path))
+            # Read back the data as raw text to verify order
+            with open(output_path, 'r', encoding='utf-8') as f:
+                content = f.read()
             
-            # Extract key orders from the loaded structure
-            loaded_key_orders = self._extract_key_orders(loaded_data)
-            
-            # Verify that all key orders are preserved
-            assert original_key_orders == loaded_key_orders, \
-                f"Key orders were not preserved.\nOriginal: {original_key_orders}\nLoaded: {loaded_key_orders}"
-    
-    def _extract_key_orders(self, obj, path=()):
-        """
-        Recursively extract the order of keys from all dictionaries in a JSON structure.
-        
-        Returns a set of tuples representing key orders:
-        - (path, tuple(keys)) for each dictionary in the structure
-        """
-        key_orders = set()
-        
-        if isinstance(obj, dict):
-            # Record the key order for this dictionary
-            key_orders.add((path, tuple(obj.keys())))
-            
-            # Recursively extract from nested structures
-            for key, value in obj.items():
-                if isinstance(value, (dict, list)):
-                    key_orders.update(self._extract_key_orders(value, path + (key,)))
-        
-        elif isinstance(obj, list):
-            # Recursively extract from nested structures in lists
-            for index, value in enumerate(obj):
-                if isinstance(value, (dict, list)):
-                    key_orders.update(self._extract_key_orders(value, path + (index,)))
-        
-        return key_orders
+            # Load with object_pairs_hook to preserve order in a list of tuples
+            # This allows us to check the order in the file
+            def check_order(pairs):
+                keys = [k for k, v in pairs]
+                assert keys == sorted(keys), f"Keys not sorted: {keys}"
+                return dict(pairs)
+                
+            json.loads(content, object_pairs_hook=check_order)

@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
-from src.config import FILE_ENCODING, JSON_INDENT, JSON_ENSURE_ASCII
+from src.config import FILE_ENCODING, JSON_INDENT, JSON_ENSURE_ASCII, JSON_SORT_KEYS, JSON_ALLOW_DUPLICATES
 
 
 def load_json_file(filepath: str) -> Dict[str, Any]:
@@ -34,15 +34,33 @@ def load_json_file(filepath: str) -> Dict[str, Any]:
     
     # Load and parse JSON
     try:
+        def duplicate_check_hook(ordered_pairs):
+            """Check for duplicate keys in JSON object."""
+            d = {}
+            for k, v in ordered_pairs:
+                if k in d:
+                   raise ValueError(f"Duplicate key found: {k}")
+                d[k] = v
+            return d
+
         with open(file_path, 'r', encoding=FILE_ENCODING) as f:
-            data = json.load(f)
+            if not JSON_ALLOW_DUPLICATES:
+                data = json.load(f, object_pairs_hook=duplicate_check_hook)
+            else:
+                data = json.load(f)
         return data
-    except json.JSONDecodeError as e:
-        raise json.JSONDecodeError(
-            f"Invalid JSON in file {filepath}: {e.msg}",
-            e.doc,
-            e.pos
-        )
+    except (json.JSONDecodeError, ValueError) as e:
+        if isinstance(e, ValueError) and "Duplicate key" in str(e):
+             # Re-raise duplicate key error as is (or wrap if needed)
+             raise e
+        elif isinstance(e, json.JSONDecodeError):
+            raise json.JSONDecodeError(
+                f"Invalid JSON in file {filepath}: {e.msg}",
+                e.doc,
+                e.pos
+            )
+        else:
+             raise e
 
 
 def validate_json_structure(data: Any) -> bool:
@@ -124,4 +142,4 @@ def serialize_json(data: Any, filepath: str) -> None:
     
     # Write JSON with consistent formatting from config
     with open(file_path, 'w', encoding=FILE_ENCODING) as f:
-        json.dump(data, f, ensure_ascii=JSON_ENSURE_ASCII, indent=JSON_INDENT)
+        json.dump(data, f, ensure_ascii=JSON_ENSURE_ASCII, indent=JSON_INDENT, sort_keys=JSON_SORT_KEYS)
