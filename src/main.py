@@ -30,6 +30,7 @@ from src.logger import (
     log_language_start,
     log_warning
 )
+from src.interactive_cli import run_interactive_cli
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -43,6 +44,7 @@ def parse_arguments() -> argparse.Namespace:
             - langs: List of target languages (default from config)
             - out_dir: Output directory path (default from config)
             - device: Device for inference - "cpu", "cuda", or None for auto-detect (default: None)
+            - interactive: Whether to use interactive CLI mode
     """
     # Build default input path
     default_input = str(get_input_path())
@@ -57,6 +59,7 @@ def parse_arguments() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 Examples:
+  %(prog)s --interactive                      # Run interactive CLI mode
   %(prog)s                                    # Translate {DEFAULT_SOURCE_FILE} from {DEFAULT_SOURCE_LANGUAGE} to {default_langs_str}
   %(prog)s input.json                         # Translate input.json to default languages
   %(prog)s --source-lang en --langs es fr     # Translate from English to Spanish and French
@@ -115,6 +118,12 @@ Examples:
         action="store_true",
         help="Save the clean and sorted source file to the output directory"
     )
+
+    parser.add_argument(
+        "--interactive", "-i",
+        action="store_true",
+        help="Run in interactive CLI mode (asks for all options)"
+    )
     
     return parser.parse_args()
 
@@ -123,6 +132,17 @@ def main():
     """Main function to orchestrate JSON translation."""
     # Parse CLI arguments
     args = parse_arguments()
+    
+    # Run interactive mode if requested
+    if args.interactive:
+        input_file, source_lang, target_langs, output_dir, update_source, output_source, device = run_interactive_cli()
+        args.input = input_file
+        args.source_lang = source_lang
+        args.langs = target_langs
+        args.out_dir = output_dir
+        args.update_source = update_source
+        args.output_source = output_source
+        args.device = None if device == "auto" else device
     
     # Validate source language
     if not validate_source_language(args.source_lang):
@@ -210,17 +230,17 @@ def main():
             total_strings = len(collect_string_paths(source_data))
             
             # Start progress tracking for this language
-            task_name = f"Traduciendo a {lang.upper()}"
+            task_name = f"Translating to {lang.upper()}"
             progress_bar.start_task(task_name, total_strings)
             
             # Load model for this language
-            log_progress(f"  Cargando modelo de traducción {args.source_lang} → {lang}...")
+            log_progress(f"  Loading translation model {args.source_lang} → {lang}...")
             
             # Dependency Injection: Instantiate provider (in a real DI container this would be injected)
             provider = OpusMTProvider()
             device_used = provider.load_model(args.source_lang, lang, args.device)
             
-            log_progress(f"  ✓ Modelo cargado (usando {device_used})")
+            log_progress(f"  ✓ Model loaded (using {device_used})")
             
             # Create translation function with progress callback
             def translate_func(texts):
@@ -230,7 +250,7 @@ def main():
                 )
             
             # Translate JSON values with progress tracking
-            log_progress(f"  Traduciendo contenido...")
+            log_progress(f"  Translating content...")
             translated_data = translate_json_values(
                 source_data, 
                 translate_func,
@@ -250,19 +270,19 @@ def main():
             
         except ValueError as e:
             # Unsupported language or invalid configuration
-            log_error(f"Error de configuración para el idioma '{lang}'", e)
+            log_error(f"Configuration error for language '{lang}'", e)
             failed_translations.append((lang, str(e)))
             continue
             
         except RuntimeError as e:
             # Model loading failure
-            log_error(f"Error al cargar el modelo para el idioma '{lang}'", e)
+            log_error(f"Error loading model for language '{lang}'", e)
             failed_translations.append((lang, str(e)))
             continue
             
         except Exception as e:
             # Any other translation error
-            log_error(f"Error en la traducción para el idioma '{lang}'", e)
+            log_error(f"Translation error for language '{lang}'", e)
             failed_translations.append((lang, str(e)))
             continue
     

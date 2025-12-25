@@ -114,11 +114,11 @@ class OpusMTProvider(TranslationProvider):
             batch_size: Number of texts to process at once
             progress_callback: Optional callback to report progress (processed_count)
         """
-        if not self.model or not self.tokenizer:
-            raise RuntimeError("Model and tokenizer must be loaded before translation.")
-
         if not texts:
             return []
+        
+        if not self.model or not self.tokenizer:
+            raise RuntimeError("Model and tokenizer must be loaded before translation.")
         
         all_translations = []
         

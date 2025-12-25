@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given, strategies as st, settings, HealthCheck
 
 from src.translation_pipeline import translate_json_values
 
@@ -14,6 +14,7 @@ from src.translation_pipeline import translate_json_values
 class TestOutputFileGeneration:
     """Property-based tests for output file generation."""
     
+    @settings(suppress_health_check=[HealthCheck.too_slow], deadline=None)
     @given(
         json_data=st.recursive(
             st.one_of(

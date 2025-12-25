@@ -1,284 +1,615 @@
-# Cambios Realizados - Sistema de Configuración y Barra de Progreso
+# Changes Made - Configuration System, Progress Bar, Interactive CLI and Localization
 
-## Resumen
+## Summary
 
-Se ha implementado un sistema de configuración centralizado para el proyecto JSON Translator, facilitando la gestión de variables importantes y la estructura de directorios. Además, se ha añadido una barra de progreso en tiempo real que muestra el avance de la traducción con estimación de tiempo.
+A centralized configuration system has been implemented for the JSON Translator project. Additionally, a real-time progress bar has been added showing translation progress with time estimation. An interactive CLI has been created to guide users through translation options, and a localization system has been implemented to support multiple languages (Spanish and English) with easy extensibility for additional languages.
 
-## Archivos Creados
+## Latest Changes - Interactive CLI and Localization System (December 2025)
+
+### Files Created
+
+#### 1. `src/interactive_cli.py`
+Interactive command-line interface for the translator:
+- **Color-coded output**: Uses ANSI colors for better UX (Blue, Green, Yellow, Red, Cyan)
+- **Step-by-step guidance**: Guides user through 6 main steps
+- **File validation**: Checks if files exist and shows available files
+- **Language selection**: Single language selector for source, multiple selector for targets
+- **Output directory management**: Allows custom or default output paths
+- **Source file options**: Update original or save clean copy
+- **Device selection**: CPU, GPU (CUDA), or automatic detection
+- **Summary and confirmation**: Shows all settings before proceeding
+- **Flexible input**: Accepts multiple formats (spaces, commas, yes/no variants)
+
+#### 2. `src/locale.py`
+Localization management system:
+- **LocaleManager class**: Singleton pattern for managing translations
+- **Automatic detection**: Detects system locale (LANG, LANGUAGE, LC_ALL variables)
+- **Fallback mechanism**: Falls back to English if translation not found
+- **JSON-based translations**: Stores translations in JSON files
+- **Convenience functions**: `t()`, `set_locale()`, `get_locale()`
+
+#### 3. `locale/es.json`
+Spanish translations with 54 keys covering:
+- Headers and section titles
+- Prompts and questions
+- Status and error messages
+- Device selection options
+- Confirmation messages
+- Labels and descriptions
+
+#### 4. `locale/en.json`
+English translations with identical structure to Spanish
+
+#### 5. `locale/README.md`
+Quick guide for the locale folder:
+- How locale system works
+- How to add new languages
+- Automatic detection explanation
+- Validation information
+
+#### 6. `LOCALIZATION.md`
+Comprehensive localization documentation:
+- Complete API reference
+- How to use the locale system
+- Adding new languages step-by-step
+- Key naming conventions
+- Fallback behavior
+- Example for French
+
+#### 7. `INTERACTIVE_CLI_GUIDE.md`
+User guide for the interactive CLI:
+- Step-by-step walkthrough
+- Input format examples
+- Response handling
+- Color and symbol meanings
+- Comparison with traditional CLI
+- Tips and best practices
+
+#### 8. `test_localization.py`
+Test script for localization system:
+- Tests all supported locales
+- Verifies all keys are present
+- Shows all translations
+- Validates fallback mechanism
+
+### Files Modified
+
+#### 1. `src/main.py`
+- Added import for `run_interactive_cli`
+- Added `--interactive` / `-i` argument to argparse
+- Added logic to run interactive CLI when requested
+- Maps interactive output to function arguments
+
+#### 2. `src/interactive_cli.py`
+Updated to use localization:
+- Imported locale functions
+- Replaced all hardcoded Spanish texts with `t()` calls
+- Dynamic language support based on system locale
+- All prompts, messages, and labels use localization
+
+**Nota importante:** El idioma por defecto de la aplicación se ha cambiado a inglés (`en`).
+Al iniciar el modo interactivo, la CLI pregunta primero cuál idioma desea usar para la propia interfaz
+y aplica esa selección inmediatamente (por ejemplo: `en - English` o `es - Español`).
+
+### Project Structure
+
+```
+Project Root
+├── src/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── file_io.py
+│   ├── json_traversal.py
+│   ├── logger.py
+│   ├── main.py                 # Updated: Added --interactive support
+│   ├── placeholder_protection.py
+│   ├── progress_bar.py
+│   ├── translation_engine.py
+│   ├── translation_pipeline.py
+│   ├── interactive_cli.py       # NEW: Interactive CLI
+│   └── locale.py                # NEW: Localization system
+├── locale/                       # NEW: Translation files
+│   ├── es.json
+│   ├── en.json
+│   └── README.md
+├── tests/
+├── test_data/
+├── input/
+├── output/
+├── CHANGES.md
+├── CONFIG.md
+├── INTERACTIVE_CLI_GUIDE.md      # NEW: User guide
+├── LOCALIZATION.md              # NEW: Developer guide
+├── test_localization.py         # NEW: Localization tests
+└── ... other files
+```
+
+## Features Overview
+
+### Interactive CLI (`--interactive` or `-i`)
+
+User-friendly guided workflow:
+
+```bash
+python -m src.main --interactive
+```
+
+#### Step 1: File Selection
+- Prompts for input file
+- Validates file existence
+- Shows available files if not found
+
+#### Step 2: Source Language
+- Lists supported source languages
+- User selects one
+- Shows confirmation
+
+#### Step 3: Target Languages
+- Lists available target languages (based on source)
+- User selects one or more (space or comma separated)
+- Shows selected languages
+
+#### Step 4: Output Directory
+- Shows default output directory
+- Offers option for custom directory
+- Validates directory path
+
+#### Step 5: Source File Options
+- Option to update original file (sorted + deduplicated)
+- Option to save clean copy to output
+- Clear messages about what happens
+
+#### Step 6: Device Selection
+- Automatic (default, recommended)
+- CPU
+- CUDA/GPU
+- Clear selection with confirmation
+
+#### Step 7: Summary & Confirmation
+- Shows all settings in a summary
+- User confirms before proceeding
+- Can cancel if settings are wrong
+
+### Localization System
+
+#### Supported Languages
+- Spanish (es) - Default
+- English (en)
+
+#### Automatic Detection
+System tries to detect language in this order:
+1. System locale (LANG environment variable)
+2. Alternative environment variables (LANGUAGE, LC_ALL)
+3. System configuration
+4. Falls back to Spanish if all fail
+
+#### Easy to Extend
+To add French:
+1. Create `locale/fr.json` with translations
+2. Add 'fr' to `SUPPORTED_LOCALES` in `src/locale.py`
+3. Done! System will use it when LANG=fr_FR
+
+## Usage Examples
+
+### Interactive Mode (Recommended)
+
+```bash
+# Default (Spanish, auto-detect)
+python -m src.main --interactive
+
+# Short form
+python -m src.main -i
+
+# Force English
+export LANG=en_US.UTF-8
+python -m src.main -i
+```
+
+### Traditional CLI (Still Supported)
+
+```bash
+# All commands still work as before
+python -m src.main input/es.json --source-lang es --langs en fr ca --device cpu
+```
+
+### Mixing Interactive and Traditional
+
+Not possible - either use `--interactive` or traditional arguments.
+
+## Testing
+
+### Run Localization Tests
+
+```bash
+python test_localization.py
+```
+
+Output shows:
+- ✓ All locales supported
+- ✓ All keys present in each language
+- ✓ Fallback mechanism works
+- ✓ Dynamic language switching works
+- List of all 54 translation keys
+
+### Test Spanish CLI
+
+```bash
+python -m src.main --interactive
+# Answer prompts in Spanish (or press Enter for defaults)
+```
+
+### Test English CLI
+
+```bash
+export LANG=en_US.UTF-8
+python -m src.main --interactive
+# Interface appears in English
+```
+
+## Key Statistics
+
+### Localization
+- **Languages**: 2 (Spanish, English)
+- **Translation keys**: 54
+- **File size**: ~1.5KB each language
+
+### Interactive CLI
+- **Steps**: 6 guided steps
+- **Colors**: 5 different ANSI colors used
+- **Input validation**: All inputs validated
+- **Fallback options**: All questions have sensible defaults
+
+## Backward Compatibility
+
+✅ **Fully backward compatible**
+- Traditional CLI arguments still work
+- All existing scripts continue to work
+- New `--interactive` is optional
+- Default behavior unchanged
+
+## Architecture Improvements
+
+### Before
+- Single language (Spanish), hardcoded texts
+- Manual argument passing required
+- No validation feedback
+
+### After
+- Multiple language support
+- Guided interactive workflow
+- Automatic system locale detection
+- Complete input validation
+- Colorful, user-friendly interface
+- Easily extensible architecture
+
+## Benefits
+
+1. **User-Friendly**: No need to remember all options
+2. **Discoverable**: Users learn options through guided prompts
+3. **Safe**: Confirmation before proceeding
+4. **Validated**: All inputs validated in real-time
+5. **Accessible**: Works in Spanish and English
+6. **Extensible**: Easy to add new languages
+7. **Backward Compatible**: Existing workflows still work
+
+## Suggested Next Steps
+
+1. **Add more languages**: French, German, Italian, etc.
+2. **Config file support**: Allow --config option
+3. **Alias system**: Create shortcuts for common workflows
+4. **Progress visualization**: Show translation progress in interactive mode
+5. **Undo functionality**: Keep backup of original file
+
+## Technical Notes
+
+### Singleton Pattern
+`LocaleManager` uses singleton pattern to ensure:
+- Only one instance loads translations
+- Memory efficient
+- Consistent state across application
+
+### Environment Variables
+Supports common locale environment variables:
+- Linux/Mac: `LANG`, `LANGUAGE`, `LC_ALL`
+- Windows: System regional settings (via Python's locale module)
+
+### No External Dependencies
+The localization system uses only Python standard library:
+- `json` - for loading translation files
+- `pathlib` - for file paths
+- `locale` and `os` - for system locale detection
+
+## File Sizes
+
+```
+src/interactive_cli.py     ~10 KB
+src/locale.py              ~5 KB
+locale/es.json             ~1.5 KB
+locale/en.json             ~1.5 KB
+LOCALIZATION.md            ~8 KB
+INTERACTIVE_CLI_GUIDE.md   ~6 KB
+```
+
+## Conclusion
+
+The interactive CLI and localization system make the JSON Translator more accessible and user-friendly while maintaining complete backward compatibility. The system is designed to be easily extensible for additional languages and features.
+
+
+## Files Created
 
 ### 1. `src/config.py`
-Archivo de configuración centralizado que contiene:
-- **Configuración de directorios**: `DEFAULT_INPUT_DIR`, `DEFAULT_OUTPUT_DIR`
-- **Configuración de idiomas**: `SUPPORTED_LANGUAGES`, `DEFAULT_TARGET_LANGUAGES`
-- **Configuración de modelos**: `MODEL_TEMPLATES`, `MAX_SEQUENCE_LENGTH`, `TRANSLATION_BATCH_SIZE`
-- **Configuración de formato**: `JSON_INDENT`, `FILE_ENCODING`, `JSON_ENSURE_ASCII`
-- **Configuración de placeholders**: `PLACEHOLDER_TOKEN`, `PLACEHOLDER_PATTERNS`
-- **Funciones helper**: `get_input_path()`, `get_output_path()`, `get_model_name()`, etc.
+Centralized configuration file containing:
+- **Directory configuration**: `DEFAULT_INPUT_DIR`, `DEFAULT_OUTPUT_DIR`
+- **Language configuration**: `SUPPORTED_LANGUAGES`, `DEFAULT_TARGET_LANGUAGES`
+- **Model configuration**: `MODEL_TEMPLATES`, `MAX_SEQUENCE_LENGTH`, `TRANSLATION_BATCH_SIZE`
+- **Format configuration**: `JSON_INDENT`, `FILE_ENCODING`, `JSON_ENSURE_ASCII`
+- **Placeholder configuration**: `PLACEHOLDER_TOKEN`, `PLACEHOLDER_PATTERNS`
+- **Helper functions**: `get_input_path()`, `get_output_path()`, `get_model_name()`, etc.
 
-### 2. `input/` y `output/`
-Directorios creados para organizar archivos:
-- `input/`: Carpeta para archivos JSON de origen (español)
-- `output/`: Carpeta para archivos JSON traducidos
-- Cada carpeta contiene un archivo `.gitkeep` para mantenerlas en git
+### 2. `input/` and `output/`
+Directories created to organize files:
+- `input/`: Folder for source JSON files (Spanish)
+- `output/`: Folder for translated JSON files
+- Each folder contains a `.gitkeep` file to keep them in git
 
 ### 3. `CONFIG.md`
-Documentación completa sobre:
-- Cómo usar el archivo de configuración
-- Descripción de cada sección de configuración
-- Ejemplos de personalización
-- Mejores prácticas
-- Solución de problemas
+Complete documentation on:
+- How to use the configuration file
+- Description of each configuration section
+- Customization examples
+- Best practices
+- Troubleshooting
 
 ### 4. `CHANGES.md`
-Este archivo, documentando todos los cambios realizados.
+This file, documenting all changes made.
 
-## Barra de Progreso (Nuevo - Diciembre 2025)
+## Progress Bar (New - December 2025)
 
-### Archivo Creado
+### File Created
 
 #### `src/progress_bar.py`
-Módulo de seguimiento y visualización de progreso que incluye:
-- **Clase `TaskProgress`**: Gestiona el estado del progreso de cada tarea
-- **Clase `ProgressBar`**: Renderiza la barra de progreso visual
-- **Cálculo dinámico de ETA**: Estima el tiempo restante basándose en la velocidad de procesamiento
-- **Actualización en tiempo real**: Muestra el progreso mientras se ejecuta la traducción
-- **Notificaciones de cambio de tarea**: Informa cuando se cambia de idioma
+Progress tracking and visualization module that includes:
+- **`TaskProgress` class**: Manages the progress state of each task
+- **`ProgressBar` class**: Renders the visual progress bar
+- **Dynamic ETA calculation**: Estimates remaining time based on processing speed
+- **Real-time updates**: Shows progress while translation is running
+- **Task change notifications**: Reports when switching languages
 
-### Archivos Modificados para Barra de Progreso
+### Files Modified for Progress Bar
 
 #### `src/translation_pipeline.py`
-- Añadido parámetro `progress_callback` a `translate_json_values()`
-- Invoca el callback después de completar la traducción
-- Pasa el número de elementos procesados y totales al callback
+- Added `progress_callback` parameter to `translate_json_values()`
+- Invokes the callback after completing translation
+- Passes number of processed and total elements to the callback
 
 #### `src/translation_engine.py`
-- Añadido parámetro `progress_callback` a `translate_batch()`
-- Reporta progreso después de cada lote procesado
-- Permite actualizaciones en tiempo real durante la traducción
+- Added `progress_callback` parameter to `translate_batch()`
+- Reports progress after each batch is processed
+- Allows real-time updates during translation
 
 #### `src/main.py`
-- Importa `ProgressBar` y `collect_string_paths`
-- Inicializa la barra de progreso antes del bucle de traducción
-- Cuenta el total de strings antes de cada idioma
-- Inicia nueva tarea para cada idioma con notificación
-- Actualiza el progreso durante la traducción
-- Marca la tarea como completa al finalizar
-- Mensajes traducidos al español
+- Imports `ProgressBar` and `collect_string_paths`
+- Initializes progress bar before translation loop
+- Counts total strings before each language
+- Starts new task for each language with notification
+- Updates progress during translation
+- Marks task as complete when finished
+- Messages translated to Spanish
 
-### Características de la Barra de Progreso
+### Progress Bar Features
 
-1. **Cálculo Dinámico del Tiempo**
-   - Mide la velocidad de procesamiento después de los primeros 10 elementos
-   - Calcula el ETA basándose en los elementos restantes
-   - Actualiza el tiempo estimado dinámicamente
+1. **Dynamic Time Calculation**
+   - Measures processing speed after first 10 elements
+   - Calculates ETA based on remaining elements
+   - Dynamically updates estimated time
 
-2. **Visualización en Tiempo Real**
+2. **Real-time Visualization**
    ```
-   ▶ Traduciendo a EN
-     Total de elementos: 1902
-     [████████████████████░░░░░░░░░░░░░░░░░░░░] 47.1% | 896/1902 elementos | ETA: 02:30
-   ```
-
-3. **Notificaciones de Cambio de Tarea**
-   - Muestra cuando se cambia de idioma
-   - Indica el total de elementos a procesar
-   - Formato claro y colorido
-
-4. **Mensaje de Finalización**
-   ```
-   ✓ Completado en 5m 0s
+   ▶ Translating to EN
+     Total items: 1902
+     [████████████████████░░░░░░░░░░░░░░░░░░░░] 47.1% | 896/1902 items | ETA: 02:30
    ```
 
-### Resultados de Pruebas
+3. **Task Change Notifications**
+   - Shows when switching languages
+   - Indicates total items to process
+   - Clear and colorful format
 
-**Configuración de prueba:**
-- Archivo: 1,902 elementos
-- Idioma objetivo: Inglés
-- Dispositivo: CPU
-- Tiempo total: 5 minutos
+4. **Completion Message**
+   ```
+   ✓ Completed in 5m 0s
+   ```
 
-**Precisión del progreso:**
+### Test Results
+
+**Test configuration:**
+- File: 1,902 items
+- Target language: English
+- Device: CPU
+- Total time: 5 minutes
+
+**Progress accuracy:**
 - 20.2% | 384/1902 | ETA: 03:46 ✅
 - 47.1% | 896/1902 | ETA: 02:30 ✅
 - 62.3% | 1184/1902 | ETA: 01:47 ✅
 - 84.1% | 1600/1902 | ETA: 00:45 ✅
-- 100.0% | 1902/1902 | Completado ✅
+- 100.0% | 1902/1902 | Completed ✅
 
-## Archivos Modificados
+## Files Modified
 
 ### 1. `src/main.py`
-- Importa configuración desde `src/config.py`
-- Usa `DEFAULT_INPUT_DIR`, `DEFAULT_OUTPUT_DIR`, `DEFAULT_TARGET_LANGUAGES`
-- Usa funciones helper `get_input_path()` y `get_output_path()`
-- Los valores por defecto ahora vienen de la configuración
+- Imports configuration from `src/config.py`
+- Uses `DEFAULT_INPUT_DIR`, `DEFAULT_OUTPUT_DIR`, `DEFAULT_TARGET_LANGUAGES`
+- Uses helper functions `get_input_path()` and `get_output_path()`
+- Default values now come from configuration
 
 ### 2. `src/translation_engine.py`
-- Importa configuración desde `src/config.py`
-- Usa `MODEL_TEMPLATES`, `MAX_SEQUENCE_LENGTH`, `TRANSLATION_BATCH_SIZE`
-- Usa funciones `get_model_name()` y `validate_language()`
-- Elimina el diccionario `MODEL_MAPPING` hardcodeado
+- Imports configuration from `src/config.py`
+- Uses `MODEL_TEMPLATES`, `MAX_SEQUENCE_LENGTH`, `TRANSLATION_BATCH_SIZE`
+- Uses `get_model_name()` and `validate_language()` functions
+- Removes hardcoded `MODEL_MAPPING` dictionary
 
 ### 3. `src/file_io.py`
-- Importa configuración desde `src/config.py`
-- Usa `FILE_ENCODING`, `JSON_INDENT`, `JSON_ENSURE_ASCII`
-- Todas las operaciones de archivo usan valores de configuración
+- Imports configuration from `src/config.py`
+- Uses `FILE_ENCODING`, `JSON_INDENT`, `JSON_ENSURE_ASCII`
+- All file operations use configuration values
 
 ### 4. `tests/test_main.py`
-- Importa configuración para usar en tests
-- Usa `DEFAULT_TARGET_LANGUAGES`, `SUPPORTED_LANGUAGES`
-- Usa `get_input_path()` para obtener rutas por defecto
-- Los tests ahora son independientes de valores hardcodeados
+- Imports configuration to use in tests
+- Uses `DEFAULT_TARGET_LANGUAGES`, `SUPPORTED_LANGUAGES`
+- Uses `get_input_path()` to get default paths
+- Tests are now independent of hardcoded values
 
 ### 5. `.gitignore`
-- Actualizado para ignorar contenido de `input/` y `output/`
-- Mantiene los archivos `.gitkeep` en git
-- Permite que las carpetas existan en el repositorio pero ignora su contenido
+- Updated to ignore contents of `input/` and `output/`
+- Keeps `.gitkeep` files in git
+- Allows folders to exist in repository but ignores their contents
 
 ### 6. `README.md`
-- Añadida sección "Project Structure" explicando la organización
-- Añadida sección "Configuration" explicando `src/config.py`
-- Actualizados todos los ejemplos para usar `input/` y `output/`
-- Actualizada la estructura del proyecto en la documentación
+- Added "Project Structure" section explaining organization
+- Added "Configuration" section explaining `src/config.py`
+- Updated all examples to use `input/` and `output/`
+- Updated project structure in documentation
 
-## Cambios en la Estructura de Directorios
+## Changes in Directory Structure
 
-### Antes:
+### Before:
 ```
 .
 ├── src/
 ├── tests/
 ├── test_data/
-├── es.json (en raíz)
-└── archivos traducidos en raíz
+├── es.json (in root)
+└── translated files in root
 ```
 
-### Después:
+### After:
 ```
 .
-├── input/              # ← NUEVO: Archivos de origen
+├── input/              # ← NEW: Source files
 │   ├── .gitkeep
-│   └── es.json         # ← Movido aquí
-├── output/             # ← NUEVO: Archivos traducidos
+│   └── es.json         # ← Moved here
+├── output/             # ← NEW: Translated files
 │   ├── .gitkeep
 │   ├── en.json
 │   ├── fr.json
 │   └── ca.json
 ├── src/
-│   ├── config.py       # ← NUEVO: Configuración centralizada
+│   ├── config.py       # ← NEW: Centralized configuration
 │   └── ...
 ├── tests/
 ├── test_data/
-├── CONFIG.md           # ← NUEVO: Documentación de configuración
-└── CHANGES.md          # ← NUEVO: Este archivo
+├── CONFIG.md           # ← NEW: Configuration documentation
+└── CHANGES.md          # ← NEW: This file
 ```
 
-## Beneficios de los Cambios
+## Benefits of Changes
 
-### 1. Organización Mejorada
-- Archivos de entrada y salida están separados en carpetas dedicadas
-- Más fácil encontrar y gestionar archivos
-- Estructura más profesional y escalable
+### 1. Improved Organization
+- Input and output files are separated in dedicated folders
+- Easier to find and manage files
+- More professional and scalable structure
 
-### 2. Configuración Centralizada
-- Todas las variables importantes en un solo lugar (`src/config.py`)
-- Fácil modificar comportamiento sin tocar múltiples archivos
-- Reduce duplicación de código
+### 2. Centralized Configuration
+- All important variables in one place (`src/config.py`)
+- Easy to modify behavior without touching multiple files
+- Reduces code duplication
 
-### 3. Mantenibilidad
-- Cambios de configuración se hacen en un solo lugar
-- Menos propenso a errores por valores inconsistentes
-- Más fácil añadir nuevos idiomas o características
+### 3. Maintainability
+- Configuration changes made in one place
+- Less prone to errors from inconsistent values
+- Easier to add new languages or features
 
-### 4. Testabilidad
-- Tests usan la misma configuración que la aplicación
-- Más fácil crear tests que sean independientes de valores hardcodeados
-- Tests más robustos y mantenibles
+### 4. Testability
+- Tests use the same configuration as the application
+- Easier to create tests independent of hardcoded values
+- More robust and maintainable tests
 
-### 5. Documentación
-- `CONFIG.md` proporciona guía completa de configuración
-- Ejemplos claros de cómo personalizar el sistema
-- Facilita onboarding de nuevos desarrolladores
+### 5. Documentation
+- `CONFIG.md` provides complete configuration guide
+- Clear examples of how to customize the system
+- Facilitates onboarding of new developers
 
-## Uso del Nuevo Sistema
+## Using the New System
 
-### Uso Básico (sin cambios para el usuario)
+### Basic Usage (no changes for users)
 ```bash
-# Coloca tu archivo en input/es.json
+# Place your file in input/es.json
 python -m src.main
 
-# Los archivos traducidos aparecen en output/
+# Translated files appear in output/
 ```
 
-### Personalización de Directorios
+### Custom Directories
 ```bash
-# Usar directorios personalizados
+# Use custom directories
 python -m src.main input/custom.json --out-dir ./translations
 ```
 
-### Modificar Configuración
+### Modify Configuration
 ```python
-# Editar src/config.py
-DEFAULT_INPUT_DIR = "mis_traducciones/origen"
-DEFAULT_OUTPUT_DIR = "mis_traducciones/destino"
+# Edit src/config.py
+DEFAULT_INPUT_DIR = "my_translations/source"
+DEFAULT_OUTPUT_DIR = "my_translations/destination"
 ```
 
-### Añadir Nuevo Idioma
+### Add New Language
 ```python
-# En src/config.py
-SUPPORTED_LANGUAGES = ["en", "fr", "ca", "de"]  # Añadir alemán
+# In src/config.py
+SUPPORTED_LANGUAGES = ["en", "fr", "ca", "de"]  # Add German
 
 MODEL_TEMPLATES = {
     "en": "Helsinki-NLP/opus-mt-es-en",
     "fr": "Helsinki-NLP/opus-mt-es-fr",
     "ca": "Helsinki-NLP/opus-mt-es-ca",
-    "de": "Helsinki-NLP/opus-mt-es-de",  # Añadir modelo
+    "de": "Helsinki-NLP/opus-mt-es-de",  # Add model
 }
 ```
 
-## Compatibilidad
+## Compatibility
 
-### Retrocompatibilidad
-- Los comandos CLI siguen funcionando igual
-- Se pueden especificar rutas personalizadas con argumentos
-- El comportamiento por defecto es similar (solo cambian las carpetas)
+### Backward Compatibility
+- CLI commands continue to work the same
+- Custom paths can be specified with arguments
+- Default behavior is similar (only folders change)
 
-### Migración
-Si tienes archivos en la raíz del proyecto:
-1. Mueve `es.json` a `input/es.json`
-2. Los archivos traducidos se generarán en `output/` automáticamente
+### Migration
+If you have files in project root:
+1. Move `es.json` to `input/es.json`
+2. Translated files will be generated in `output/` automatically
 
 ## Tests
 
-### Tests Ejecutados
+### Tests Executed
 ```bash
 pytest tests/test_file_io.py tests/test_json_traversal.py tests/test_placeholder_protection.py -v
 ```
 
-**Resultado**: ✅ 56 passed, 1 skipped
+**Result**: ✅ 56 passed, 1 skipped
 
-### Tests Actualizados
-- `tests/test_main.py`: Actualizado para usar configuración
-- `tests/test_file_io.py`: Funciona con nueva configuración
-- Todos los tests pasan correctamente
+### Updated Tests
+- `tests/test_main.py`: Updated to use configuration
+- `tests/test_file_io.py`: Works with new configuration
+- All tests pass correctly
 
-## Próximos Pasos Sugeridos
+## Suggested Next Steps
 
-1. **Añadir más idiomas**: Usar la configuración para añadir soporte para más idiomas
-2. **Variables de entorno**: Permitir override de configuración con variables de entorno
-3. **Configuración por proyecto**: Permitir archivos de configuración específicos por proyecto
-4. **Validación de configuración**: Añadir validación al inicio para detectar configuraciones inválidas
+1. **Add more languages**: Use configuration to add support for more languages
+2. **Environment variables**: Allow configuration override with environment variables
+3. **Project-specific configuration**: Allow configuration files specific to each project
+4. **Configuration validation**: Add validation at startup to detect invalid configurations
 
-## Notas Técnicas
+## Technical Notes
 
-### Problema con PyTorch en Windows
-Durante los tests se encontró un problema con PyTorch en Windows (DLL error). Esto es un problema conocido de PyTorch en Python 3.13 en Windows y no está relacionado con los cambios de configuración.
+### PyTorch Issue on Windows
+During tests, an issue with PyTorch on Windows was found (DLL error). This is a known PyTorch issue on Python 3.13 on Windows and is not related to configuration changes.
 
-**Solución temporal**: Los tests que no requieren PyTorch se ejecutan correctamente.
+**Temporary solution**: Tests that don't require PyTorch run correctly.
 
-### Archivos Movidos
-- `es.json` fue movido de la raíz a `input/es.json`
-- Los archivos de salida ahora se generan en `output/` por defecto
+### Files Moved
+- `es.json` was moved from root to `input/es.json`
+- Output files are now generated in `output/` by default
 
-## Conclusión
+## Conclusion
 
-El sistema de configuración centralizado mejora significativamente la organización, mantenibilidad y escalabilidad del proyecto. Todos los cambios son retrocompatibles y la funcionalidad existente se mantiene intacta.
+The centralized configuration system significantly improves project organization, maintainability, and scalability. All changes are backward compatible and existing functionality remains intact.

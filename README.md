@@ -159,9 +159,9 @@ python -m src.main input/en.json --source-lang en --langs de --device cpu
 During translation, you'll see a real-time progress bar showing:
 
 ```
-▶ Traduciendo a EN
-  Total de elementos: 1902
-  [████████████████████░░░░░░░░░░░░░░░░░░░░] 47.1% | 896/1902 elementos | ETA: 02:30
+▶ Translating to EN
+  Total items: 1902
+  [████████████████████░░░░░░░░░░░░░░░░░░░░] 47.1% | 896/1902 items | ETA: 02:30
 ```
 
 The progress bar displays:

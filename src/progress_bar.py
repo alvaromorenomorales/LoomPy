@@ -100,7 +100,7 @@ class ProgressBar:
         
         # Print task change notification
         print(f"\n{self.colors['bold']}{self.colors['cyan']}▶ {task_name}{self.colors['reset']}")
-        print(f"  Total de elementos: {total_items}")
+        print(f"  Total items: {total_items}")
         self._render()
     
     def update(self, processed_items: int, force: bool = False):
@@ -160,7 +160,7 @@ class ProgressBar:
         bar += f"{self.colors['blue']}{'░' * empty_width}{self.colors['reset']}"
         
         # Build info string
-        info = f"{task.processed_items}/{task.total_items} elementos"
+        info = f"{task.processed_items}/{task.total_items} items"
         
         # Add ETA if available and not final
         if not final and task.eta_seconds is not None:
