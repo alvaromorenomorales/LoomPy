@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-translate_json_opus.py
+loompy_translate.py
 
-Translate a Spanish JSON file to multiple target languages using Helsinki-NLP Opus-MT models.
+Translate a JSON file to multiple target languages using Helsinki-NLP Opus-MT models.
 Each language uses a separate model.
 Only string values are translated; keys remain unchanged.
 Placeholders like {name} or %s are preserved.
@@ -99,7 +99,7 @@ def translate_json_values(src_obj: Any, model, tokenizer, device: str) -> Any:
 
 # ---------- CLI ----------
 def main():
-    parser = argparse.ArgumentParser(description="Translate Spanish JSON file to multiple languages using Opus-MT.")
+    parser = argparse.ArgumentParser(description="Translate JSON file to multiple languages using Opus-MT.")
     parser.add_argument("input", nargs="?", default="es.json", help="Input Spanish JSON file (default: es.json)")
     parser.add_argument("--out-dir", default=".", help="Output directory for translated files")
     parser.add_argument("--langs", nargs="+", default=["en", "fr", "ca"], help="Target language codes (default: en fr ca)")

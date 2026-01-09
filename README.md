@@ -1,4 +1,4 @@
-# 🌐 JSON i18n Translator
+# 🌐 LoomPy
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
@@ -84,10 +84,34 @@ You can modify these settings to customize the behavior of the translator.
 
 ## Usage
 
+LoomPy can be used in two ways:
+
+### Method 1: Standalone Script (Recommended)
+
+Use the `loompy_translate.py` script directly:
+
+```bash
+python loompy_translate.py input/es.json --out-dir output --langs en fr ca
+```
+
+### Method 2: Module Usage
+
+Use as a Python module with the full feature set:
+
+```bash
+python -m src.main
+```
+
 ### Basic Usage
 
 Translate `input/es.json` from Spanish to English, French, and Catalan:
 
+**Standalone:**
+```bash
+python loompy_translate.py input/es.json --out-dir output --langs en fr ca
+```
+
+**Module:**
 ```bash
 python -m src.main
 ```

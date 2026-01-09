@@ -1,6 +1,6 @@
-# Contributing to langsTranslator
+# Contributing to LoomPy
 
-Thank you for your interest in contributing to `langsTranslator`! We welcome contributions from everyone.
+Thank you for your interest in contributing to `LoomPy`! We welcome contributions from everyone.
 
 ## Code of Conduct
 
