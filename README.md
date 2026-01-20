@@ -84,17 +84,25 @@ You can modify these settings to customize the behavior of the translator.
 
 ## Usage
 
-LoomPy can be used in two ways:
+### Interactive Mode (Recommended for First-Time Users)
 
-### Method 1: Standalone Script (Recommended)
-
-Use the `loompy_translate.py` script directly:
+Run the interactive wizard that will guide you through the process:
 
 ```bash
-python loompy_translate.py input/es.json --out-dir output --langs en fr ca
+python loompy.py --interactive
 ```
 
-### Method 2: Module Usage
+### Command Line Interface
+
+#### Method 1: Standalone Script
+
+Use the `loompy.py` script directly:
+
+```bash
+python loompy.py input/es.json --out-dir output --langs en fr ca
+```
+
+#### Method 2: Module Usage
 
 Use as a Python module with the full feature set:
 
@@ -108,7 +116,7 @@ Translate `input/es.json` from Spanish to English, French, and Catalan:
 
 **Standalone:**
 ```bash
-python loompy_translate.py input/es.json --out-dir output --langs en fr ca
+python loompy.py input/es.json --out-dir output --langs en fr ca
 ```
 
 **Module:**

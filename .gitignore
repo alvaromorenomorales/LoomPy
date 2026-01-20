@@ -25,6 +25,9 @@ venv/
 env/
 ENV/
 
+# Allow locale files
+!locale/**
+
 # Testing
 .pytest_cache/
 .coverage
@@ -39,6 +42,7 @@ htmlcov/
 
 # Output files
 *.json
+!locale/*.json
 !test_data/*.json
 !input/.gitkeep
 !output/.gitkeep

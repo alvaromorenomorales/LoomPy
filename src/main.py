@@ -44,7 +44,7 @@ def parse_arguments() -> argparse.Namespace:
             - langs: List of target languages (default from config)
             - out_dir: Output directory path (default from config)
             - device: Device for inference - "cpu", "cuda", or None for auto-detect (default: None)
-            - interactive: Whether to use interactive CLI mode
+            - interactive: Whether to use interactive CLI mode (default: True if no arguments provided)
     """
     # Build default input path
     default_input = str(get_input_path())
@@ -119,13 +119,13 @@ Examples:
         help="Save the clean and sorted source file to the output directory"
     )
 
-    parser.add_argument(
-        "--interactive", "-i",
-        action="store_true",
-        help="Run in interactive CLI mode (asks for all options)"
-    )
+    # Parse arguments
+    args = parser.parse_args()
     
-    return parser.parse_args()
+    # If no arguments were provided, enable interactive mode
+    args.interactive = len(sys.argv) == 1
+    
+    return args
 
 
 def main():
@@ -133,7 +133,7 @@ def main():
     # Parse CLI arguments
     args = parse_arguments()
     
-    # Run interactive mode if requested
+    # Run interactive mode if no arguments provided
     if args.interactive:
         input_file, source_lang, target_langs, output_dir, update_source, output_source, device = run_interactive_cli()
         args.input = input_file
