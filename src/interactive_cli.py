@@ -318,14 +318,49 @@ def run_interactive_cli() -> Tuple[str, str, List[str], str, bool, bool, str]:
             print(f"{Colors.RED}✗ {t('invalid_device')}{Colors.RESET}")
     
     # Summary
+    summary_items = [
+        (t('summary_file'), input_file),
+        (t('summary_source_lang'), source_lang.upper()),
+        (t('summary_target_langs'), ', '.join([l.upper() for l in target_langs])),
+        (t('summary_output_dir'), output_dir),
+        (t('summary_update_source'), t('summary_yes') if update_source else t('summary_no')),
+        (t('summary_save_copy'), t('summary_yes') if output_source else t('summary_no')),
+        (t('summary_device'), device.upper())
+    ]
+    
+    # Calculate max label and value lengths for alignment
+    max_label_len = max(len(item[0]) for item in summary_items)
+    max_val_len = max(len(str(item[1])) for item in summary_items)
+    
+    # Cap value width to stay within terminal bounds (assuming ~80-100 chars)
+    terminal_width = 80
+    val_width = min(max_val_len, terminal_width - max_label_len - 9)
+    if val_width < 30: val_width = 30 # Minimum reasonable width for paths
+    
     print_header(t('header_summary'))
-    print(f"{t('summary_file')}:            {Colors.CYAN}{input_file}{Colors.RESET}")
-    print(f"{t('summary_source_lang')}:      {Colors.CYAN}{source_lang.upper()}{Colors.RESET}")
-    print(f"{t('summary_target_langs')}:    {Colors.CYAN}{', '.join([l.upper() for l in target_langs])}{Colors.RESET}")
-    print(f"{t('summary_output_dir')}:  {Colors.CYAN}{output_dir}{Colors.RESET}")
-    print(f"{t('summary_update_source')}:  {Colors.CYAN}{t('summary_yes') if update_source else t('summary_no')}{Colors.RESET}")
-    print(f"{t('summary_save_copy')}:      {Colors.CYAN}{t('summary_yes') if output_source else t('summary_no')}{Colors.RESET}")
-    print(f"{t('summary_device')}:        {Colors.CYAN}{device.upper()}{Colors.RESET}")
+    
+    # Top border
+    print(f"  ┌{'─' * (max_label_len + 2)}┬{'─' * (val_width + 2)}┐")
+    
+    for i, (label, value) in enumerate(summary_items):
+        padding = " " * (max_label_len - len(label))
+        
+        # Format value: truncate with ellipsis in the middle for paths if too long
+        val_str = str(value)
+        if len(val_str) > val_width:
+            if "/" in val_str or "\\" in val_str: # Likely a path
+                val_str = val_str[:15] + "..." + val_str[-(val_width-18):]
+            else:
+                val_str = val_str[:val_width-3] + "..."
+            
+        print(f"  │ {Colors.BOLD}{label}{Colors.RESET}{padding} │ {Colors.CYAN}{val_str:<{val_width}}{Colors.RESET} │")
+        
+        # Add separator between items
+        if i < len(summary_items) - 1:
+            print(f"  ├{'─' * (max_label_len + 2)}┼{'─' * (val_width + 2)}┤")
+            
+    # Bottom border
+    print(f"  └{'─' * (max_label_len + 2)}┴{'─' * (val_width + 2)}┘")
     
     proceed = confirm(f"\n{t('confirm_proceed')}", default=True)
     
