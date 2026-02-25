@@ -18,6 +18,16 @@ A professional command-line tool that translates JSON files between multiple lan
 - **Batch Processing**: Efficiently processes multiple texts in batches
 - **Error Recovery**: Continues with other languages if one fails
 
+## Screenshots
+
+<div align="center">
+  <img src="./src/assets/images/screenshot-1.png" width="800" alt="LoomPy Screenshot 1">
+  <br>
+  <img src="./src/assets/images/screenshot-2.png" width="800" alt="LoomPy Screenshot 2">
+  <br>
+  <img src="./src/assets/images/screenshot-3.png" width="800" alt="LoomPy Screenshot 3">
+</div>
+
 ## Installation
 
 ### Prerequisites

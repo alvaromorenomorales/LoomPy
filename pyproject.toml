@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "loompy-translator"
-version = "1.0.0"
+version = "1.0.1"
 description = "A professional command-line tool that translates JSON files between multiple languages while preserving structure, keys, and placeholders."
 readme = "README.md"
 authors = [

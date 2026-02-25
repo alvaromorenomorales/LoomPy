@@ -53,5 +53,6 @@
   "summary_yes": "Oui",
   "target_langs_instruction": "Saisissez les nombres séparés par des espaces ou des virgules",
   "update_source_prompt": "Voulez-vous mettre à jour le fichier original avec les clés triées et les duplicatas supprimés ?",
-  "using_directory": "Utilisation du répertoire"
+  "yes_abbr": "o",
+  "no_abbr": "n"
 }

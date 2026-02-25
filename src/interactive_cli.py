@@ -173,14 +173,22 @@ def choose_multiple_languages(prompt: str, available_langs: List[str], defaults:
 
 
 def confirm(prompt: str, default: bool = True) -> bool:
-    """Ask user for yes/no confirmation."""
-    default_text = "S/n" if default else "s/N"
+    """Ask user for yes/no confirmation with localized options."""
+    y = t('yes_abbr')
+    n = t('no_abbr')
+    
+    # Capitalize the default option
+    y_display = y.upper() if default else y.lower()
+    n_display = n.upper() if not default else n.lower()
+    
+    default_text = f"{y_display}/{n_display}"
     response = input(f"{Colors.BOLD}{prompt} [{default_text}]{Colors.RESET}: ").strip().lower()
     
     if not response:
         return default
     
-    return response in ("s", "si", "sí", "y", "yes", "ya")
+    # Check against localized yes mappings and some common defaults
+    return response in (y.lower(), "si", "sí", "y", "yes", "ya", "o", "oui")
 
 
 def get_output_directory(default: str = DEFAULT_OUTPUT_DIR) -> str:

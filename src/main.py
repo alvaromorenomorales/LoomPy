@@ -19,7 +19,7 @@ from src.config import (
     get_supported_target_languages
 )
 from src.file_io import load_json_file, ensure_output_directory, serialize_json
-from src.translation_engine import OpusMTProvider
+# OpusMTProvider is imported inside main() to improve startup time
 from src.translation_pipeline import translate_json_values
 from src.json_traversal import collect_string_paths
 from src.progress_bar import ProgressBar
@@ -130,6 +130,8 @@ Examples:
 
 def main():
     """Main function to orchestrate JSON translation."""
+    log_progress(">>> LoomPy: Bootstrapping application...")
+    
     # Parse CLI arguments
     args = parse_arguments()
     
@@ -235,6 +237,9 @@ def main():
             
             # Load model for this language
             log_progress(f"  Loading translation model {args.source_lang} → {lang}...")
+            
+            # Lazy import to speed up startup
+            from src.translation_engine import OpusMTProvider
             
             # Dependency Injection: Instantiate provider (in a real DI container this would be injected)
             provider = OpusMTProvider()

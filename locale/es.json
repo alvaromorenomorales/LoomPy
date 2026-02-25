@@ -51,5 +51,7 @@
     "operation_cancelled": "Operación cancelada.",
     "select_option": "Selecciona una opción",
     "lang_selected": "Idioma seleccionado",
-    "enter_number": "Por favor, introduce un número."
+    "enter_number": "Por favor, introduce un número.",
+    "yes_abbr": "s",
+    "no_abbr": "n"
 }
