@@ -1,6 +1,6 @@
 {
     "choose_cli_language": "Choose the language for the interface",
-    "header": "LoomPy Translation Wizard",
+    "header": "LoomPy INTERACTIVE Translation Wizard",
     "header_summary": "Configuration Summary",
     "section_input_file": "Input File",
     "input_dir_label": "Input directory",

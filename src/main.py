@@ -1,8 +1,9 @@
 """Main entry point for JSON Translator."""
 import argparse
 import sys
+import os
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Any
 
 from src.config import (
     DEFAULT_INPUT_DIR,
@@ -19,8 +20,8 @@ from src.config import (
     get_supported_target_languages
 )
 from src.file_io import load_json_file, ensure_output_directory, serialize_json
-# OpusMTProvider is imported inside main() to improve startup time
-from src.translation_pipeline import translate_json_values
+# NLLBTranslationProvider is imported inside main() to improve startup time
+from src.translation_pipeline import translate_json_to_multi_languages
 from src.json_traversal import collect_string_paths
 from src.progress_bar import ProgressBar
 from src.logger import (
@@ -36,20 +37,8 @@ from src.interactive_cli import run_interactive_cli
 def parse_arguments() -> argparse.Namespace:
     """
     Parse command line arguments for JSON translation.
-    
-    Returns:
-        argparse.Namespace: Parsed arguments with:
-            - input: Path to source JSON file (default from config)
-            - source_lang: Source language code (default from config)
-            - langs: List of target languages (default from config)
-            - out_dir: Output directory path (default from config)
-            - device: Device for inference - "cpu", "cuda", or None for auto-detect (default: None)
-            - interactive: Whether to use interactive CLI mode (default: True if no arguments provided)
     """
-    # Build default input path
     default_input = str(get_input_path())
-    
-    # Build supported languages string
     supported_source_langs_str = ", ".join(SUPPORTED_SOURCE_LANGUAGES)
     supported_langs_str = ", ".join(SUPPORTED_LANGUAGES)
     default_langs_str = " ".join(DEFAULT_TARGET_LANGUAGES)
@@ -73,7 +62,7 @@ Examples:
         "input",
         nargs="?",
         default=default_input,
-        help=f"Path to source JSON file in Spanish (default: {default_input})"
+        help=f"Path to source JSON file (default: {default_input})"
     )
     
     parser.add_argument(
@@ -119,12 +108,8 @@ Examples:
         help="Save the clean and sorted source file to the output directory"
     )
 
-    # Parse arguments
     args = parser.parse_args()
-    
-    # If no arguments were provided, enable interactive mode
     args.interactive = len(sys.argv) == 1
-    
     return args
 
 
@@ -132,10 +117,8 @@ def main():
     """Main function to orchestrate JSON translation."""
     log_progress(">>> LoomPy: Bootstrapping application...")
     
-    # Parse CLI arguments
     args = parse_arguments()
     
-    # Run interactive mode if no arguments provided
     if args.interactive:
         input_file, source_lang, target_langs, output_dir, update_source, output_source, device = run_interactive_cli()
         args.input = input_file
@@ -146,164 +129,101 @@ def main():
         args.output_source = output_source
         args.device = None if device == "auto" else device
     
-    # Validate source language
+    # Validation
     if not validate_source_language(args.source_lang):
-        log_error(
-            f"Unsupported source language: {args.source_lang}",
-            ValueError(f"Supported source languages: {', '.join(SUPPORTED_SOURCE_LANGUAGES)}")
-        )
+        log_error(f"Unsupported source language: {args.source_lang}", ValueError(f"Supported lists: {SUPPORTED_SOURCE_LANGUAGES}"))
         sys.exit(1)
     
-    # Validate target languages
-    supported_targets = get_supported_target_languages(args.source_lang)
     invalid_targets = [lang for lang in args.langs if not validate_language_pair(args.source_lang, lang)]
-    
     if invalid_targets:
-        log_error(
-            f"Unsupported target language(s) for source '{args.source_lang}': {', '.join(invalid_targets)}",
-            ValueError(f"Available target languages for {args.source_lang}: {', '.join(supported_targets)}")
-        )
+        log_error(f"Unsupported target language(s): {', '.join(invalid_targets)}", ValueError("Invalid language pair"))
         sys.exit(1)
     
     log_progress(f"Starting JSON translation from {args.input}")
     log_progress(f"Source language: {args.source_lang}")
     log_progress(f"Target languages: {', '.join(args.langs)}")
-    log_progress(f"Output directory: {args.out_dir}")
     log_progress(f"Device: {args.device if args.device else 'auto-detect'}")
     
-    # Load source JSON file
+    # Load source file
     try:
         source_data = load_json_file(args.input)
-        log_progress(f"✓ Loaded source file: {args.input}")
-    except FileNotFoundError as e:
-        log_error(f"Source file not found: {args.input}", e)
-        sys.exit(1)
+        log_progress(f"V Loaded source file: {args.input}")
     except Exception as e:
         log_error(f"Failed to load source file: {args.input}", e)
         sys.exit(1)
     
-    # Create output directory
+    # Ensure output directory exists
     try:
         ensure_output_directory(args.out_dir)
-        log_progress(f"✓ Output directory ready: {args.out_dir}")
-    except Exception as e:
-        log_error(f"Failed to create output directory: {args.out_dir}", e)
+        log_progress(f"V Output directory ready: {args.out_dir}")
     except Exception as e:
         log_error(f"Failed to create output directory: {args.out_dir}", e)
         sys.exit(1)
 
-    # Handle source file updates/output if requested
+    # Handle source file options
     if args.update_source:
-        try:
-            log_progress(f"Updating source file: {args.input}")
-            serialize_json(source_data, args.input)
-            log_progress(f"✓ Source file updated (sorted and cleaned)")
-        except Exception as e:
-            log_error(f"Failed to update source file: {args.input}", e)
+        serialize_json(source_data, args.input)
+        log_progress(f"V Source file updated")
 
     if args.output_source:
-        try:
-            source_filename = Path(args.input).name
-            output_source_path = str(Path(args.out_dir) / source_filename)
-            log_progress(f"Saving source copy to: {output_source_path}")
-            serialize_json(source_data, output_source_path)
-            log_progress(f"✓ Source file saved to output")
-        except Exception as e:
-            log_error(f"Failed to save source file to output", e)
+        source_filename = Path(args.input).name
+        output_source_path = str(Path(args.out_dir) / source_filename)
+        serialize_json(source_data, output_source_path)
+        log_progress(f"V Source copy saved to output")
     
-    # If no languages specified and only cleaning requested, exit early
-    if not args.langs and (args.update_source or args.output_source):
-        log_completion("Cleanup", "Finished")
+    if not args.langs:
         sys.exit(0)
     
-    # Track successful and failed translations
-    successful_translations = []
-    failed_translations = []
+    # --- MULTI-LANGUAGE TRANSLATION PROCESS ---
     
-    # Initialize progress bar
+    from src.translation_engine import NLLBTranslationProvider
+    provider = NLLBTranslationProvider()
+    
+    # Load model once using first target language as reference (NLLB is multilingual)
+    provider.load_model(args.source_lang, args.langs[0], args.device)
+    
     progress_bar = ProgressBar(bar_width=40, enable_colors=True)
     
-    # Loop through target languages
-    for lang in args.langs:
-        log_language_start(lang)
+    # Count unique string values to translate
+    total_strings = len(collect_string_paths(source_data))
+    total_work = total_strings * len(args.langs)
+    
+    task_name = f"Translating to {len(args.langs)} languages"
+    print() # Add newline to separate from previous logs/download bars
+    progress_bar.start_task(task_name, total_work)
+    
+    log_progress(f"  Starting massive multi-language translation...")
+    
+    def multi_translate_func(texts, target_langs):
+        return provider.translate_multi_target_batch(
+            texts, 
+            target_langs,
+            progress_callback=lambda current, total: progress_bar.update(current)
+        )
+    
+    try:
+        # One call to rule them all
+        results_dict = translate_json_to_multi_languages(
+            source_data,
+            args.langs,
+            multi_translate_func
+        )
         
-        try:
-            # Count total strings to translate
-            total_strings = len(collect_string_paths(source_data))
-            
-            # Start progress tracking for this language
-            task_name = f"Translating to {lang.upper()}"
-            progress_bar.start_task(task_name, total_strings)
-            
-            # Load model for this language
-            log_progress(f"  Loading translation model {args.source_lang} → {lang}...")
-            
-            # Lazy import to speed up startup
-            from src.translation_engine import OpusMTProvider
-            
-            # Dependency Injection: Instantiate provider (in a real DI container this would be injected)
-            provider = OpusMTProvider()
-            device_used = provider.load_model(args.source_lang, lang, args.device)
-            
-            log_progress(f"  ✓ Model loaded (using {device_used})")
-            
-            # Create translation function with progress callback
-            def translate_func(texts):
-                return provider.translate_batch(
-                    texts, 
-                    progress_callback=lambda count: progress_bar.update(count)
-                )
-            
-            # Translate JSON values with progress tracking
-            log_progress(f"  Translating content...")
-            translated_data = translate_json_values(
-                source_data, 
-                translate_func,
-                progress_callback=lambda processed, total: progress_bar.update(processed)
-            )
-            
-            # Mark task as complete
-            progress_bar.complete()
-            
-            # Save output file
+        progress_bar.complete()
+        
+        # Save results
+        for lang, translated_json in results_dict.items():
             output_filename = f"{lang}.json"
             output_path = str(Path(args.out_dir) / output_filename)
-            serialize_json(translated_data, output_path)
-            
+            serialize_json(translated_json, output_path)
             log_completion(lang, output_path)
-            successful_translations.append(lang)
             
-        except ValueError as e:
-            # Unsupported language or invalid configuration
-            log_error(f"Configuration error for language '{lang}'", e)
-            failed_translations.append((lang, str(e)))
-            continue
-            
-        except RuntimeError as e:
-            # Model loading failure
-            log_error(f"Error loading model for language '{lang}'", e)
-            failed_translations.append((lang, str(e)))
-            continue
-            
-        except Exception as e:
-            # Any other translation error
-            log_error(f"Translation error for language '{lang}'", e)
-            failed_translations.append((lang, str(e)))
-            continue
-    
-    # Report final summary
-    print("\n" + "="*60)
-    log_progress(f"Translation complete!")
-    log_progress(f"Successful: {len(successful_translations)}/{len(args.langs)} languages")
-    
-    if successful_translations:
-        log_progress(f"  ✓ {', '.join(successful_translations)}")
-    
-    if failed_translations:
-        log_warning(f"Failed: {len(failed_translations)} languages")
-        for lang, error in failed_translations:
-            log_error(f"  ✗ {lang}: {error}")
-        sys.exit(1)  # Exit with error if any translations failed
+        print("\n" + "="*60)
+        log_progress(f"Translation complete! Successfully processed {len(args.langs)} languages.")
+        
+    except Exception as e:
+        log_error("Massive translation failed", e)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

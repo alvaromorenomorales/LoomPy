@@ -55,4 +55,6 @@ output/*
 
 # Models cache
 .cache/
+# Models
+.models/
 models/

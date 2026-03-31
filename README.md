@@ -65,6 +65,20 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 
 See [PyTorch installation guide](https://pytorch.org/get-started/locally/) for more options.
 
+### High-Performance NLLB-200 (Recommended) 🚀
+
+LoomPy includes a built-in provider using **CTranslate2** and **NLLB-200-600M** (distilled). This model provides higher translation quality and much faster performance for massive translations (up to 10x faster).
+
+To use this high-performance mode, simply run the included installation script. It will automatically install the required libraries (`ctranslate2`, `transformers`) and then download and optimize the model for your system (converts to `int8` for maximum CPU efficiency). 
+
+This only needs to be run once:
+
+```bash
+python -m src.install_model
+```
+
+The model will be stored in the `./models/nllb-200-600M-ct2` folder. LoomPy will automatically use this model for the `NLLBTranslationProvider` when running the main application.
+
 ## Project Structure
 
 The project uses a configuration-based approach with dedicated directories:
@@ -73,10 +87,13 @@ The project uses a configuration-based approach with dedicated directories:
 .
 ├── input/          # Place your source JSON files here (e.g., es.json)
 ├── output/         # Translated files are generated here
-├── src/
-│   ├── config.py   # Centralized configuration (directories, languages, models)
-│   ├── main.py     # CLI entry point
-│   └── ...         # Other modules
+├── models/         # Local optimized models (CTranslate2)
+├── loompy.py       # Main entry point (root)
+├── src/            # Source code and internal tools
+│   ├── config.py   # Centralized configuration
+│   ├── main.py     # Application logic
+│   ├── tests/      # Unit and integration tests
+│   └── ...         # Other modules and scripts
 └── test_data/      # Example JSON files for testing
 ```
 
@@ -639,23 +656,26 @@ GPU acceleration can provide 3-10x speedup depending on hardware.
 .
 ├── input/                         # Source JSON files directory
 │   ├── .gitkeep                   # Keeps directory in git
-│   └── es.json                    # Your Spanish source file
 ├── output/                        # Generated translation files
 │   ├── .gitkeep                   # Keeps directory in git
-│   ├── en.json                    # English translation (generated)
-│   ├── fr.json                    # French translation (generated)
-│   └── ca.json                    # Catalan translation (generated)
-├── src/
+├── loompy.py                      # Main entry point (root)
+├── src/                           # Source code and internal tools
+│   ├── main.py                    # CLI application logic
 │   ├── config.py                  # Centralized configuration
-│   ├── main.py                    # CLI entry point
 │   ├── translation_pipeline.py    # Core translation orchestration
 │   ├── translation_engine.py      # Model loading and batch translation
 │   ├── placeholder_protection.py  # Placeholder detection and restoration
 │   ├── json_traversal.py          # JSON structure navigation
 │   ├── file_io.py                 # File loading and serialization
-│   ├── progress_bar.py            # Real-time progress tracking and visualization
-│   └── logger.py                  # Logging utilities
-├── tests/                         # Test suite
+│   ├── progress_bar.py            # Real-time progress tracking
+│   ├── logger.py                  # Logging utilities
+│   ├── install_model.py           # NLLB model installation script
+│   ├── benchmark_models.py        # Model comparison tool
+│   ├── benchmark_multi_lang.py    # Multi-language benchmark tool
+│   └── tests/                     # Test suite
+│       ├── test_main.py           # CLI tests
+│       ├── test_file_io.py        # File IO tests
+│       └── ...                    # Other tests
 ├── test_data/                     # Example JSON files for testing
 ├── requirements.txt               # Python dependencies
 └── README.md                      # This file

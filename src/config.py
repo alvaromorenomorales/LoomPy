@@ -18,6 +18,10 @@ DEFAULT_SOURCE_FILE = "es.json"
 # Test data directory
 TEST_DATA_DIR = "test_data"
 
+# Model directory (for local models like CTranslate2)
+MODEL_DIR = "models"
+NLLB_MODEL_NAME = "nllb-200-600M-ct2"
+
 
 # ============================================================================
 # TRANSLATION CONFIGURATION
@@ -182,6 +186,15 @@ def get_test_data_path(filename: str) -> Path:
         Path('test_data/simple.json')
     """
     return Path(TEST_DATA_DIR) / filename
+
+
+def get_model_path(model_name: str = None) -> Path:
+    """
+    Get the full path for a local model.
+    """
+    if model_name is None:
+        model_name = NLLB_MODEL_NAME
+    return Path(MODEL_DIR) / model_name
 
 
 def get_model_name(target_language: str) -> str:
