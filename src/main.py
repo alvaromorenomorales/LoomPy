@@ -120,13 +120,13 @@ def main():
     args = parse_arguments()
     
     if args.interactive:
-        input_file, source_lang, target_langs, output_dir, update_source, output_source, device = run_interactive_cli()
+        input_file, source_lang, target_langs, output_dir, device = run_interactive_cli()
         args.input = input_file
         args.source_lang = source_lang
         args.langs = target_langs
         args.out_dir = output_dir
-        args.update_source = update_source
-        args.output_source = output_source
+        args.update_source = False
+        args.output_source = False
         args.device = None if device == "auto" else device
     
     # Validation

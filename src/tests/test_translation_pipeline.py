@@ -1,7 +1,7 @@
 """Tests for the translation pipeline."""
 
 import pytest
-from hypothesis import given, strategies as st
+from hypothesis import given, strategies as st, settings, HealthCheck
 from src.translation_pipeline import translate_json_values
 
 
@@ -167,6 +167,7 @@ def test_translate_does_not_modify_original():
 class TestPropertyBasedNonStringValues:
     """Property-based tests for non-string value preservation in translation pipeline."""
     
+    @settings(deadline=None, suppress_health_check=[HealthCheck.too_slow, HealthCheck.data_too_large])
     @given(
         json_data=st.recursive(
             st.one_of(

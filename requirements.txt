@@ -4,6 +4,8 @@ torch>=2.0.0
 sentencepiece>=0.1.99
 sacremoses>=0.0.53
 ctranslate2>=4.0.0
+langdetect>=1.0.9
+
 
 # Test dependencies
 pytest>=7.4.0

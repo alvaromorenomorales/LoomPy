@@ -1,61 +1,24 @@
-## Carpeta `locale/`
+# CLI Localizations
 
-Contiene los archivos de traducción para la CLI interactiva.
+This directory contains the localization files for the LoomPy v2 CLI.
 
-### Archivos
+## Adding a New Language to the CLI
 
-- **`es.json`** - Textos en español (idioma por defecto)
-- **`en.json`** - Textos en inglés
+To add support for a new language in the CLI:
 
-### Cómo funciona
+1.  Identify the FLORES-200 code for the language (e.g., `spa_Latn` for Spanish, `eng_Latn` for English). You can find these in `SUPPORTED_LANGUAGES.md`.
+2.  Create a new JSON file in this directory with that code (e.g., `deu_Latn.json` for German).
+3.  Copy the keys from `eng_Latn.json` and translate the values.
+4.  Ensure the language is also configured in the main `config.json` file in the root directory.
 
-Cada archivo JSON contiene pares clave-valor con las traducciones de todos los textos de la CLI interactiva:
+The system will automatically detect any `.json` file in this directory and offer it as an option in the interactive CLI.
 
-```json
-{
-  "header": "JSON TRANSLATOR - CLI INTERACTIVO",
-  "section_input_file": "1. Archivo a traducir",
-  ...
-}
-```
+## Current Locales
 
-### Agregar un nuevo idioma
+- `eng_Latn.json`: English (Default)
+- `spa_Latn.json`: Spanish
+- `fra_Latn.json`: French
 
-Para agregar soporte para un nuevo idioma:
+## Technical Details
 
-1. Copia uno de los archivos existentes (ej: `es.json`)
-2. Crea un nuevo archivo con el código de idioma (ej: `fr.json` para francés)
-3. Traduce todos los valores manteniendo las claves iguales
-4. Actualiza `src/locale.py` agregando el código a `SUPPORTED_LOCALES`
-
-### Detección automática
-
-El sistema detecta automáticamente el idioma del sistema:
-- En Linux/Mac: Usa la variable `LANG`
-- En Windows: Intenta detectar desde configuración regional
-- Fallback: Usa español si no puede detectar
-
-Para forzar un idioma:
-```bash
-export LANG=en_US.UTF-8  # Linux/Mac
-$env:LANG='en_US.UTF-8'  # Windows PowerShell
-```
-
-### Validación
-
-Se proporcionan 54 claves de traducción que cubre todos los textos de la CLI:
-- Títulos y secciones
-- Preguntas y prompts
-- Etiquetas y descripciones
-- Mensajes de confirmación
-- Mensajes de error y estado
-
-### Estructura de archivos
-
-```
-locale/
-├── es.json  # 54 claves en español
-└── en.json  # 54 claves en inglés
-```
-
-Para más detalles, ver [LOCALIZATION.md](../LOCALIZATION.md)
+The localization system in `src/locale.py` scans this directory at startup. It uses the file's base name (stem) as the locale code. If your system locale matches one of the available codes, it will be selected automatically.

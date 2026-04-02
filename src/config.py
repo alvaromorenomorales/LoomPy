@@ -1,6 +1,24 @@
-"""Configuration settings for JSON Translator."""
-
+import json
 from pathlib import Path
+
+# ============================================================================
+# USER CONFIGURATION LOADING
+# ============================================================================
+
+def load_user_config_from_file() -> dict:
+    """
+    Load configuration from config.json if it exists.
+    """
+    config_path = Path("config.json")
+    if config_path.exists():
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+_USER_CONFIG = load_user_config_from_file()
 
 # ============================================================================
 # DIRECTORY CONFIGURATION
@@ -27,48 +45,48 @@ NLLB_MODEL_NAME = "nllb-200-600M-ct2"
 # TRANSLATION CONFIGURATION
 # ============================================================================
 
-# Default source language (ISO 639-1 code)
-DEFAULT_SOURCE_LANGUAGE = "es"  # Spanish
+# Default source language (ISO 639-1 code or NLLB code)
+DEFAULT_SOURCE_LANGUAGE = _USER_CONFIG.get("default_source_language", "es")
 
-# Supported source languages (ISO 639-1 codes)
-SUPPORTED_SOURCE_LANGUAGES = ["es", "en", "fr", "ca", "de"]
+def _get_fallback_names() -> dict:
+    """Extract language names from SUPPORTED_LANGUAGES.md if available."""
+    mapping = {}
+    md_path = Path("SUPPORTED_LANGUAGES.md")
+    if md_path.exists():
+        try:
+            with open(md_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if "|" in line and "`" in line:
+                        parts = [p.strip() for p in line.split("|")]
+                        if len(parts) >= 3:
+                            code = parts[1].replace("`", "").strip()
+                            name = parts[2].strip()
+                            if code and name:
+                                mapping[code] = name
+        except Exception:
+            pass
+    return mapping
 
-# Supported target languages (ISO 639-1 codes) - kept for backwards compatibility
-SUPPORTED_LANGUAGES = ["en", "fr", "ca"]  # English, French, Catalan
+# Load names from database
+_FALLBACK_NAMES = _get_fallback_names()
 
-# Default target languages (when no languages are specified)
-DEFAULT_TARGET_LANGUAGES = ["en", "fr", "ca"]
+# All 200+ supported languages from our database
+ALL_SUPPORTED_LANGUAGES = sorted(list(_FALLBACK_NAMES.keys()))
 
-# Model name templates for Helsinki-NLP Opus-MT models
-# Structure: {source_lang: {target_lang: model_name}}
-MODEL_TEMPLATES = {
-    "es": {
-        "en": "Helsinki-NLP/opus-mt-es-en",  # Spanish to English
-        "fr": "Helsinki-NLP/opus-mt-es-fr",  # Spanish to French
-        "ca": "Helsinki-NLP/opus-mt-es-ca",  # Spanish to Catalan
-        "de": "Helsinki-NLP/opus-mt-es-de",  # Spanish to German
-    },
-    "en": {
-        "es": "Helsinki-NLP/opus-mt-en-es",  # English to Spanish
-        "fr": "Helsinki-NLP/opus-mt-en-fr",  # English to French
-        "de": "Helsinki-NLP/opus-mt-en-de",  # English to German
-        "ca": "Helsinki-NLP/opus-mt-en-ca",  # English to Catalan
-    },
-    "fr": {
-        "es": "Helsinki-NLP/opus-mt-fr-es",  # French to Spanish
-        "en": "Helsinki-NLP/opus-mt-fr-en",  # French to English
-        "de": "Helsinki-NLP/opus-mt-fr-de",  # French to German
-    },
-    "ca": {
-        "es": "Helsinki-NLP/opus-mt-ca-es",  # Catalan to Spanish
-        "en": "Helsinki-NLP/opus-mt-ca-en",  # Catalan to English
-    },
-    "de": {
-        "es": "Helsinki-NLP/opus-mt-de-es",  # German to Spanish
-        "en": "Helsinki-NLP/opus-mt-de-en",  # German to English
-        "fr": "Helsinki-NLP/opus-mt-de-fr",  # German to French
-    },
-}
+# Use defaults from config as the primary list for UX (Quick list)
+_SOURCE_DEF = _USER_CONFIG.get("default_source_language", "spa_Latn")
+_TARGET_DEFS = _USER_CONFIG.get("default_target_languages", ["eng_Latn", "fra_Latn"])
+
+# Primary CLI list (union of defaults)
+_UNION = sorted(list(set([_SOURCE_DEF] + _TARGET_DEFS)))
+SUPPORTED_SOURCE_LANGUAGES = _UNION
+SUPPORTED_LANGUAGES = _UNION
+
+# Language name resolver (can resolve any from the 200+)
+LANGUAGE_NAMES = _FALLBACK_NAMES
+
+# Export defaults for CLI usage
+DEFAULT_TARGET_LANGUAGES = _TARGET_DEFS
 
 
 # ============================================================================
@@ -138,16 +156,6 @@ LOG_LEVEL = "INFO"
 def get_input_path(filename: str = None) -> Path:
     """
     Get the full path for an input file.
-    
-    Args:
-        filename: Name of the input file. If None, uses DEFAULT_SOURCE_FILE
-        
-    Returns:
-        Path object for the input file
-        
-    Example:
-        >>> get_input_path("es.json")
-        Path('input/es.json')
     """
     if filename is None:
         filename = DEFAULT_SOURCE_FILE
@@ -157,16 +165,6 @@ def get_input_path(filename: str = None) -> Path:
 def get_output_path(filename: str) -> Path:
     """
     Get the full path for an output file.
-    
-    Args:
-        filename: Name of the output file
-        
-    Returns:
-        Path object for the output file
-        
-    Example:
-        >>> get_output_path("en.json")
-        Path('output/en.json')
     """
     return Path(DEFAULT_OUTPUT_DIR) / filename
 
@@ -174,16 +172,6 @@ def get_output_path(filename: str) -> Path:
 def get_test_data_path(filename: str) -> Path:
     """
     Get the full path for a test data file.
-    
-    Args:
-        filename: Name of the test data file
-        
-    Returns:
-        Path object for the test data file
-        
-    Example:
-        >>> get_test_data_path("simple.json")
-        Path('test_data/simple.json')
     """
     return Path(TEST_DATA_DIR) / filename
 
@@ -197,123 +185,17 @@ def get_model_path(model_name: str = None) -> Path:
     return Path(MODEL_DIR) / model_name
 
 
-def get_model_name(target_language: str) -> str:
-    """
-    Get the Hugging Face model name for a target language (legacy function).
-    Assumes Spanish as source language for backwards compatibility.
-    
-    Args:
-        target_language: ISO 639-1 language code (e.g., "en", "fr", "ca")
-        
-    Returns:
-        Model name string
-        
-    Raises:
-        ValueError: If the target language is not supported
-        
-    Example:
-        >>> get_model_name("en")
-        'Helsinki-NLP/opus-mt-es-en'
-    """
-    return get_model_name_for_pair(DEFAULT_SOURCE_LANGUAGE, target_language)
-
-
-def get_model_name_for_pair(source_language: str, target_language: str) -> str:
-    """
-    Get the Hugging Face model name for a language pair.
-    
-    Args:
-        source_language: ISO 639-1 source language code (e.g., "es", "en", "fr")
-        target_language: ISO 639-1 target language code (e.g., "en", "fr", "ca")
-        
-    Returns:
-        Model name string
-        
-    Raises:
-        ValueError: If the language pair is not supported
-        
-    Example:
-        >>> get_model_name_for_pair("es", "en")
-        'Helsinki-NLP/opus-mt-es-en'
-        >>> get_model_name_for_pair("en", "fr")
-        'Helsinki-NLP/opus-mt-en-fr'
-    """
-    if source_language not in MODEL_TEMPLATES:
-        raise ValueError(
-            f"Unsupported source language: {source_language}. "
-            f"Supported source languages: {', '.join(SUPPORTED_SOURCE_LANGUAGES)}"
-        )
-    
-    if target_language not in MODEL_TEMPLATES[source_language]:
-        available_targets = ', '.join(MODEL_TEMPLATES[source_language].keys())
-        raise ValueError(
-            f"Unsupported language pair: {source_language} -> {target_language}. "
-            f"Available target languages for {source_language}: {available_targets}"
-        )
-    
-    return MODEL_TEMPLATES[source_language][target_language]
-
-
-def validate_language(language: str) -> bool:
-    """
-    Check if a language code is supported as a target language (legacy function).
-    Assumes Spanish as source language for backwards compatibility.
-    
-    Args:
-        language: ISO 639-1 language code
-        
-    Returns:
-        True if the language is supported, False otherwise
-        
-    Example:
-        >>> validate_language("en")
-        True
-        >>> validate_language("de")
-        False
-    """
-    return language in SUPPORTED_LANGUAGES
-
-
 def validate_language_pair(source_language: str, target_language: str) -> bool:
     """
     Check if a language pair is supported.
-    
-    Args:
-        source_language: ISO 639-1 source language code
-        target_language: ISO 639-1 target language code
-        
-    Returns:
-        True if the language pair is supported, False otherwise
-        
-    Example:
-        >>> validate_language_pair("es", "en")
-        True
-        >>> validate_language_pair("en", "es")
-        True
-        >>> validate_language_pair("es", "ja")
-        False
     """
-    return (source_language in MODEL_TEMPLATES and 
-            target_language in MODEL_TEMPLATES.get(source_language, {}))
+    return (source_language in SUPPORTED_SOURCE_LANGUAGES and 
+            target_language in (SUPPORTED_SOURCE_LANGUAGES + SUPPORTED_LANGUAGES))
 
 
 def validate_source_language(language: str) -> bool:
     """
     Check if a language code is supported as a source language.
-    
-    Args:
-        language: ISO 639-1 language code
-        
-    Returns:
-        True if the language is supported as source, False otherwise
-        
-    Example:
-        >>> validate_source_language("es")
-        True
-        >>> validate_source_language("en")
-        True
-        >>> validate_source_language("ja")
-        False
     """
     return language in SUPPORTED_SOURCE_LANGUAGES
 
@@ -321,19 +203,5 @@ def validate_source_language(language: str) -> bool:
 def get_supported_target_languages(source_language: str) -> list:
     """
     Get list of supported target languages for a given source language.
-    
-    Args:
-        source_language: ISO 639-1 source language code
-        
-    Returns:
-        List of supported target language codes
-        
-    Example:
-        >>> get_supported_target_languages("es")
-        ['en', 'fr', 'ca', 'de']
-        >>> get_supported_target_languages("en")
-        ['es', 'fr', 'de', 'ca']
     """
-    if source_language not in MODEL_TEMPLATES:
-        return []
-    return list(MODEL_TEMPLATES[source_language].keys())
+    return sorted(list(set(SUPPORTED_SOURCE_LANGUAGES + SUPPORTED_LANGUAGES)))

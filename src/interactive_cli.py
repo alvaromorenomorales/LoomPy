@@ -1,7 +1,14 @@
 """Interactive CLI for JSON Translator."""
 import sys
+import json
+import time
 from pathlib import Path
 from typing import List, Tuple, Optional
+from langdetect import detect, DetectorFactory
+
+# Set seed for reproducible language detection
+DetectorFactory.seed = 0
+
 from src.config import (
     DEFAULT_INPUT_DIR,
     DEFAULT_OUTPUT_DIR,
@@ -14,7 +21,8 @@ from src.config import (
     validate_language_pair,
     validate_source_language,
     get_supported_target_languages,
-    MODEL_TEMPLATES
+    LANGUAGE_NAMES,
+    ALL_SUPPORTED_LANGUAGES
 )
 from src.logger import log_progress, log_warning, log_error
 from src.locale import t, set_locale, get_locale, get_supported_locales
@@ -36,7 +44,70 @@ class Colors:
 LANG_DISPLAY = {
     "es": "Español",
     "en": "English",
+    "fr": "Français",
 }
+# Update with names from config
+LANG_DISPLAY.update(LANGUAGE_NAMES)
+
+
+def detectar_idioma_json(ruta_archivo: str) -> Optional[str]:
+    """
+    Detect the language of a JSON file by analyzing its values.
+    
+    Args:
+        ruta_archivo: Path to the JSON file.
+        
+    Returns:
+        The detected language code or None if detection failed.
+    """
+    try:
+        with open(ruta_archivo, 'r', encoding='utf-8') as f:
+            datos = json.load(f)
+        
+        # Flatten the JSON to get all string values
+        def get_all_values(obj):
+            values = []
+            if isinstance(obj, dict):
+                for v in obj.values():
+                    values.extend(get_all_values(v))
+            elif isinstance(obj, list):
+                for item in obj:
+                    values.extend(get_all_values(item))
+            elif isinstance(obj, str):
+                values.append(obj)
+            return values
+
+        textos = get_all_values(datos)
+        
+        # Take a sample (first 20 values) and join them
+        muestra_texto = " ".join([str(t) for t in textos[:20]])
+        
+        if not muestra_texto.strip():
+            return None
+
+        detected = detect(muestra_texto)
+        
+        # Map ISO 639-1 to FLORES-200
+        iso_to_flores = {
+            "es": "spa_Latn",
+            "en": "eng_Latn",
+            "fr": "fra_Latn",
+            "ca": "cat_Latn",
+            "de": "deu_Latn",
+            "it": "ita_Latn",
+            "pt": "por_Latn",
+            "gl": "glg_Latn",
+            "ro": "ron_Latn",
+            "eu": "eus_Latn",
+            "ast": "ast_Latn",
+            "an": "arg_Latn"
+        }
+        
+        return iso_to_flores.get(detected, detected)
+    except Exception as e:
+        log_warning(f"Error during language detection: {e}")
+        return None
+
 
 
 def print_header(text: str) -> None:
@@ -104,9 +175,18 @@ def choose_language(prompt: str, available_langs: List[str], default: Optional[s
         display = f"{lang} - {LANG_DISPLAY.get(lang, lang)}"
         print_choice(i, display)
     
+    default_msg = ""
+    if default and default in available_langs:
+        default_idx = available_langs.index(default) + 1
+        default_msg = f" [{default_idx}]"
+
     while True:
-        choice = input(f"{Colors.BOLD}{t('select_option')} (1-{len(available_langs)}){Colors.RESET}: ").strip()
+        choice = input(f"{Colors.BOLD}{t('select_option')} (1-{len(available_langs)}){default_msg}{Colors.RESET}: ").strip()
         
+        if not choice and default and default in available_langs:
+            print_info(f"{t('lang_selected')}: {default}")
+            return default
+
         try:
             idx = int(choice) - 1
             if 0 <= idx < len(available_langs):
@@ -119,12 +199,14 @@ def choose_language(prompt: str, available_langs: List[str], default: Optional[s
             print(f"{Colors.RED}✗ {t('enter_number')}{Colors.RESET}")
 
 
+
 def choose_multiple_languages(prompt: str, available_langs: List[str], defaults: Optional[List[str]] = None) -> List[str]:
     """Let user choose multiple languages."""
     print_section(prompt)
     
     for i, lang in enumerate(available_langs, 1):
-        print_choice(i, lang)
+        display = f"{lang} - {LANG_DISPLAY.get(lang, lang)}"
+        print_choice(i, display)
     
     default_str = ""
     if defaults:
@@ -227,7 +309,7 @@ def get_output_directory(default: str = DEFAULT_OUTPUT_DIR) -> str:
         return default
 
 
-def run_interactive_cli() -> Tuple[str, str, List[str], str, bool, bool, str]:
+def run_interactive_cli() -> Tuple[str, str, List[str], str, str]:
     """
     Run interactive CLI to gather translation parameters.
     
@@ -259,11 +341,49 @@ def run_interactive_cli() -> Tuple[str, str, List[str], str, bool, bool, str]:
     
     # Step 2: Get source language
     print_section(t('section_source_lang'))
-    source_lang = choose_language(
-        t('choose_source_lang'),
-        SUPPORTED_SOURCE_LANGUAGES,
-        DEFAULT_SOURCE_LANGUAGE
-    )
+    
+    source_lang = None
+    while not source_lang:
+        detected_lang = None
+        if input_file:
+            try:
+                start_time = time.time()
+                detected_lang = detectar_idioma_json(input_file)
+                elapsed_time = time.time() - start_time
+                if detected_lang:
+                    # Map to FLORES-200 if possible (detectar_idioma_json might return ISO 639-1)
+                    # For simplicity, we assume detected_lang is what we want or we let user fix it
+                    print(f"  {Colors.CYAN}{t('detected_lang')}: {Colors.BOLD}{detected_lang}{Colors.RESET} ({elapsed_time:.4f}s)")
+            except Exception:
+                pass
+
+        if detected_lang:
+            if confirm(f"  {t('confirm_detected_lang')} \"{detected_lang}\"", default=True):
+                source_lang = detected_lang
+            else:
+                print_section(t('manual_source_options'))
+                print_choice(1, t('detect_again'))
+                print_choice(2, t('enter_code_manually'))
+                sub_choice = input(f"{Colors.BOLD}{t('select_option')} (1-2){Colors.RESET}: ").strip()
+                
+                if sub_choice == "2":
+                    while True:
+                        manual = input(f"{Colors.BOLD}{t('enter_flores_code')}{Colors.RESET}: ").strip()
+                        if manual in ALL_SUPPORTED_LANGUAGES:
+                            source_lang = manual
+                            break
+                        else:
+                            print(f"{Colors.RED}✗ {t('invalid_code')} {manual}. {t('check_supported_md')}{Colors.RESET}")
+                # If "1", the loop continues and detects again
+        else:
+            # Fallback if detection fails
+            print_warning(t('detection_failed'))
+            source_lang = choose_language(
+                t('choose_source_lang'),
+                SUPPORTED_SOURCE_LANGUAGES,
+                DEFAULT_SOURCE_LANGUAGE
+            )
+
     
     # Step 3: Get target languages
     supported_targets = get_supported_target_languages(source_lang)
@@ -276,24 +396,7 @@ def run_interactive_cli() -> Tuple[str, str, List[str], str, bool, bool, str]:
     # Step 4: Get output directory
     output_dir = get_output_directory()
     
-    # Step 5: Ask about source file options
-    print_section(t('section_source_options'))
-    
-    update_source = confirm(
-        t('update_source_prompt'),
-        default=False
-    )
-    
-    output_source = False
-    if not update_source:
-        output_source = confirm(
-            t('save_clean_copy'),
-            default=False
-        )
-    elif update_source:
-        print_info(t('saving_to_original'))
-    
-    # Step 6: Device selection
+    # Step 5: Device selection
     print_section(t('section_device'))
     print_choice(1, t('device_auto'), t('device_auto_desc'))
     print_choice(2, t('device_cpu'))
@@ -323,8 +426,6 @@ def run_interactive_cli() -> Tuple[str, str, List[str], str, bool, bool, str]:
         (t('summary_source_lang'), source_lang.upper()),
         (t('summary_target_langs'), ', '.join([l.upper() for l in target_langs])),
         (t('summary_output_dir'), output_dir),
-        (t('summary_update_source'), t('summary_yes') if update_source else t('summary_no')),
-        (t('summary_save_copy'), t('summary_yes') if output_source else t('summary_no')),
         (t('summary_device'), device.upper())
     ]
     
@@ -368,4 +469,4 @@ def run_interactive_cli() -> Tuple[str, str, List[str], str, bool, bool, str]:
         print(f"{Colors.YELLOW}{t('operation_cancelled')}{Colors.RESET}")
         sys.exit(0)
     
-    return input_file, source_lang, target_langs, output_dir, update_source, output_source, device
+    return input_file, source_lang, target_langs, output_dir, device
